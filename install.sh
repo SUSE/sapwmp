@@ -75,6 +75,8 @@ function run_install() {
 	done
 
 	# post install
+	grep -q "systemd.unified_cgroup_hierarchy=true" /proc/cmdline || echo
+		"Add systemd.unified_cgroup_hierarchy=true to kernel cmdline"
 	# ---
 }
 
@@ -97,6 +99,8 @@ function run_uninstall() {
 	done
 
 	# post uninstall
+	grep -q "systemd.unified_cgroup_hierarchy=true" /proc/cmdline && echo
+		"Remove systemd.unified_cgroup_hierarchy=true from kernel cmdline"
 	# ---
 
 	rm "$VERSION_FILE"
