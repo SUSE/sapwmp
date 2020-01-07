@@ -35,6 +35,7 @@ function install_file() {
 	elif [ ! -d $(dirname "$DST") ] ; then
 		mkdir -p $(dirname "$DST")
 	fi
+	echo "$DST installed"
 	cp "$SRC" "$DST"
 }
 
@@ -73,10 +74,11 @@ function run_install() {
 	
 		install_file "$name"
 	done
+	echo
 
 	# post install
-	grep -q "systemd.unified_cgroup_hierarchy=true" /proc/cmdline || echo
-		"Add systemd.unified_cgroup_hierarchy=true to kernel cmdline"
+	grep -q "systemd.unified_cgroup_hierarchy=true" /proc/cmdline || \
+		echo "TODO Add systemd.unified_cgroup_hierarchy=true to kernel cmdline"
 	# ---
 }
 
@@ -97,10 +99,11 @@ function run_uninstall() {
 	
 		uninstall_file "$name"
 	done
+	echo
 
 	# post uninstall
-	grep -q "systemd.unified_cgroup_hierarchy=true" /proc/cmdline && echo
-		"Remove systemd.unified_cgroup_hierarchy=true from kernel cmdline"
+	grep -q "systemd.unified_cgroup_hierarchy=true" /proc/cmdline && \
+		echo "TODO Remove systemd.unified_cgroup_hierarchy=true from kernel cmdline"
 	# ---
 
 	rm "$VERSION_FILE"
