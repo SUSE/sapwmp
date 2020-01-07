@@ -1,5 +1,10 @@
 # WMP configuration
 
+This repo and scripts serves to provide reference configuration files, their
+version tracking and reproducible deployment during development.
+
+The final deployment shall be done in a more standardized way.
+
 ## How to use this
 
   * Clone the repository on the target machine.
@@ -7,7 +12,8 @@
       manually.
   * Run `install.sh` (as root) to carry out the configuration.
   * To revert configuration call `uninstall.sh`.
-    * **Always use install and unistall script with from versions!**
+    * **Always use install and unistall script with same versions!**
+      * E.g. checkout two working copies to be sure.
 
 ## Making updates
 
@@ -23,3 +29,8 @@
     * Install and uninstall should be idempotent operations.
     * Install+uninstall should be net zero.
   * Use different branches for different approaches.
+
+## Gotchas
+
+  * The operations aren't atomic, so be careful when changing the install
+    script.
