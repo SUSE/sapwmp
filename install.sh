@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Make sure to update this when changing setup
-VERSION=1
+VERSION=2
 VERSION_FILE=/etc/wmp-version
 
 BAK_SUFFIX=.wmpbak

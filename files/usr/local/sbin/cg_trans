@@ -14,13 +14,13 @@ function log() {
         *) prio="auth.info" ;;
     esac
 
-        # Skip debug output, if debug setting is 0.
-        [ "${2}" = "debug" -a ${debug} == 0 ] && return 0
+	# Skip debug output, if debug setting is 0.
+	[ "${2}" = "debug" -a ${debug} == 0 ] && return 0
 
-        # Log message to syslog.
-        logger -p "${prio}" -t "${0##*/}" "$1"
+	# Log message to syslog.
+	logger --id="$$" -p "${prio}" -t "${0##*/}" "$1"
 
-        return 0
+	return 0
 }
 
 
@@ -38,8 +38,8 @@ default_SAP_group="sapsys"
 
 # We only handle opening a session.
 if [ "${PAM_TYPE}" != "open_session" ] ; then
-        log "$0: PAM type ${PAM_TYPE} not handled by us." info
-        exit 0
+	log "$0: PAM type ${PAM_TYPE} not handled by us." info
+	exit 0
 fi
 
 # We allow systemd to have a user instance.
@@ -48,60 +48,64 @@ if [ "${PAM_SERVICE}" = "systemd-user" ] ; then
         exit 0
 fi
 
+
 # ---
 # Now we determine the cgroup setting for the user, in that order:
-#        - cgroup= entry in GECOS filed of user
-#        - user or group entry in /etc/SAPusers
-#        - membership of default_SAP_group
+#	- cgroup= entry in GECOS filed of user
+#	- user or group entry in /etc/SAPusers
+#       - membership of default_SAP_group
 # First matching rule wins!
 # ---
 
 # Check if target user has a cgroup entry in GECOS field.
 if [ -z "${cgroup}" ] ; then
-        gecos=$(getent passwd | grep -m 1 "^${PAM_USER}:" | cut -d ':' -f 5)
-        IFS=',' read -a fields <<< "$gecos"
-        for ((i=0;i<=${#fields[*]};i++)) ; do
-                [[ "${fields[i]}" =~ ^cgroup= ]] || continue
-                cgroup="${fields[i]#*=}"
-        done
-        [ -z "${cgroup}" ] &&
-                log "No cgroup entry in GECOS field of target user \"${PAM_USER}\"." debug
+	gecos=$(getent passwd | grep -m 1 "^${PAM_USER}:" | cut -d ':' -f 5)
+	IFS=',' read -a fields <<< "$gecos"
+	for ((i=0;i<=${#fields[*]};i++)) ; do
+		[[ "${fields[i]}" =~ ^cgroup= ]] || continue
+		cgroup="${fields[i]#*=}"
+	done
+	if [ -n "${cgroup}" ] ; then
+		log "Cgroup entry \"${cgroup}\" found in GECOS field of target user \"${PAM_USER}\"." debug
+	else
+		log "No cgroup entry in GECOS field of target user \"${PAM_USER}\"." debug
+	fi
 fi
+
+# check for log message if SAP user file exists.
+[ -f "${sapuser_file}" ] || log "No SAP user file \"${sapuser_file}\" found." debug
 
 # Check SAP user file, if target user is listed with a cgroup entry.
 if [ -z "${cgroup}" ] ; then
-        if [ -f "${sapuser_file}" ] ; then
-                entry=$(grep -m 1 "^${PAM_USER}:" "${sapuser_file}")
-                cgroup="${entry#*:}"
-                [ -z "${cgroup}" ] &&
-                        log "No cgroup entry in \"${sapuser_file}\" for target user \"${PAM_USER}\"." debug
-        else
-                log "No SAP user file \"${sapuser_file}\" found." debug
-        fi
+	if [ -f "${sapuser_file}" ] ; then
+		entry=$(grep -m 1 "^${PAM_USER}:" "${sapuser_file}")
+		cgroup="${entry#*:}"
+		[ -z "${cgroup}" ] &&
+			log "No cgroup entry in \"${sapuser_file}\" for target user \"${PAM_USER}\"." debug
+	fi
 fi
 
 # Check SAP user file, if one of the target users groups is listed with a cgroup entry.
 if [ -z "${cgroup}" ] ; then
-        if [ -f "${sapuser_file}" ] ; then
-                for group in $(id -nG "${PAM_USER}") ; do
-                        entry=$(grep -m 1 "^@${group}:" "${sapuser_file}")
-                        cgroup="${entry#*:}"
-                        [ -z "${cgroup}" ] &&
-                                log "No cgroup entry in \"${sapuser_file}\" for group \"${group}\" of target user \"${PAM_USER}\"." debug
-                done
-        else
-                log "No SAP user file \"${sapuser_file}\" found." debug
-        fi
+	if [ -f "${sapuser_file}" ] ; then
+		for group in $(id -nG "${PAM_USER}") ; do
+			entry=$(grep -m 1 "^@${group}:" "${sapuser_file}")
+			cgroup="${entry#*:}"
+			[ -z "${cgroup}" ] &&
+				log "No cgroup entry in \"${sapuser_file}\" for group \"${group}\" of target user \"${PAM_USER}\"." debug
+		done
+	fi
 fi
 
 # Check if user is member of the default_SAP_group.
 if [ -z "${cgroup}" ] ; then
-  groups=$(id -nG "${PAM_USER}")
-  if [[ "${groups}" =~ (^| )${default_SAP_group}( |$) ]] ; then
-    cgroup="${default_cgroup}"
-  else
-    log "User \"${PAM_USER}\" is not a member of group \"${default_SAP_group}\"." debug
-    fi
+	groups=$(id -nG "${PAM_USER}")
+	if [[ "${groups}" =~ (^| )${default_SAP_group}( |$) ]] ; then
+		cgroup="${default_cgroup}"
+		log "User \"${PAM_USER}\" is a member of group \"${default_SAP_group}\"." debug
+	else
+		log "User \"${PAM_USER}\" is not a member of group \"${default_SAP_group}\"." debug
+	fi
 fi
 
 # ---
@@ -111,25 +115,25 @@ fi
 
 # No cgroup -->  Finish.
 if [ -z "${cgroup}" ] ; then
-        log "No cgroup for target user ${PAM_USER}." info
-        exit 0
+	log "No cgroup for target user ${PAM_USER}." info
+	exit 0
 else
-        log "cgroup for target user ${PAM_USER} is ${cgroup}." info
+	log "cgroup for target user ${PAM_USER} is ${cgroup}." info
 fi
 
 # Moving parent into cgroup.
 cgroup_path="/sys/fs/cgroup/${cgroup}"
 if [ ! -d "${cgroup_path}" ] ; then
-        log "Requested cgroup \"${cgroup_path}\" does not exist! Exiting." err
-        exit 1
+	log "Requested cgroup \"${cgroup_path}\" does not exist! Exiting." err
+	exit 1
 fi
+comm=$(< /proc/${PPID}/comm)
 if echo ${PPID} > "${cgroup_path}/cgroup.procs" ; then
-        log "PID ${PPID} moved into \"${cgroup_path}\"." info
+	log "PID ${PPID} (${comm}) moved into \"${cgroup_path}\"." info
 else
-        log "Moving PID ${PPID} into \"${cgroup_path}\" failed! Exiting." err
-        exit 1
+	log "Moving PID ${PPID} (${comm}) into \"${cgroup_path}\" failed! Exiting." err
+	exit 1
 fi
 
 # Bye.
 exit 0
-
