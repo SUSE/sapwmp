@@ -77,6 +77,7 @@ function run_install() {
 	echo
 
 	# post install
+	echo "NOTE Use WMP only when you observe effects caused by memory swapout"
 	grep -q "systemd.unified_cgroup_hierarchy=true" /proc/cmdline || \
 		echo "TODO Add systemd.unified_cgroup_hierarchy=true to kernel cmdline"
 	# ---
