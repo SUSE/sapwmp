@@ -1,9 +1,7 @@
 # WMP configuration
 
 This repo and scripts serves to provide reference configuration files, their
-version tracking and reproducible deployment during development.
-
-The final deployment shall be done in a more standardized way.
+version tracking and reproducible deployment as RPM package.
 
 ## How to use this
 
