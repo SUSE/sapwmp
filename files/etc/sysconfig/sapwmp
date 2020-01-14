@@ -1,0 +1,16 @@
+## Path:        SAP/WMP Confirguration
+
+## Description: TODO
+## Type:        string
+## Default:     "/etc/SAPusers"
+SAPUSER_FILE="/etc/SAPusers"
+
+## Description: Cgroup path relative to cgroup2 mount root 
+## Type:        string
+## Default:     "sap.slice/sapinit.service"
+DEFAULT_CGROUP="sap.slice/sapinit.service"
+
+## Description: User group whose members are considered
+## Type:        string
+## Default:     "sapsys"
+DEFAULT_SAP_GROUP="sapsys"

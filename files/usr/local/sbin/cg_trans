@@ -29,9 +29,7 @@ function log() {
 # Some defaults.
 unset cgroup
 debug=0
-sapuser_file="/etc/SAPusers"
-default_cgroup="sap.slice/sapinit.service"
-default_SAP_group="sapsys"
+source /etc/sysconfig/sapwmp
 
 # Check parameters. For now only: debug.
 [ "${1}" = "debug" ] && debug=1
@@ -53,7 +51,7 @@ fi
 # Now we determine the cgroup setting for the user, in that order:
 #	- cgroup= entry in GECOS filed of user
 #	- user or group entry in /etc/SAPusers
-#       - membership of default_SAP_group
+#       - membership of USER_SAP_GROUP
 # First matching rule wins!
 # ---
 
@@ -73,38 +71,38 @@ if [ -z "${cgroup}" ] ; then
 fi
 
 # check for log message if SAP user file exists.
-[ -f "${sapuser_file}" ] || log "No SAP user file \"${sapuser_file}\" found." debug
+[ -f "${SAPUSER_FILE}" ] || log "No SAP user file \"${SAPUSER_FILE}\" found." debug
 
 # Check SAP user file, if target user is listed with a cgroup entry.
 if [ -z "${cgroup}" ] ; then
-	if [ -f "${sapuser_file}" ] ; then
-		entry=$(grep -m 1 "^${PAM_USER}:" "${sapuser_file}")
+	if [ -f "${SAPUSER_FILE}" ] ; then
+		entry=$(grep -m 1 "^${PAM_USER}:" "${SAPUSER_FILE}")
 		cgroup="${entry#*:}"
 		[ -z "${cgroup}" ] &&
-			log "No cgroup entry in \"${sapuser_file}\" for target user \"${PAM_USER}\"." debug
+			log "No cgroup entry in \"${SAPUSER_FILE}\" for target user \"${PAM_USER}\"." debug
 	fi
 fi
 
 # Check SAP user file, if one of the target users groups is listed with a cgroup entry.
 if [ -z "${cgroup}" ] ; then
-	if [ -f "${sapuser_file}" ] ; then
+	if [ -f "${SAPUSER_FILE}" ] ; then
 		for group in $(id -nG "${PAM_USER}") ; do
-			entry=$(grep -m 1 "^@${group}:" "${sapuser_file}")
+			entry=$(grep -m 1 "^@${group}:" "${SAPUSER_FILE}")
 			cgroup="${entry#*:}"
 			[ -z "${cgroup}" ] &&
-				log "No cgroup entry in \"${sapuser_file}\" for group \"${group}\" of target user \"${PAM_USER}\"." debug
+				log "No cgroup entry in \"${SAPUSER_FILE}\" for group \"${group}\" of target user \"${PAM_USER}\"." debug
 		done
 	fi
 fi
 
-# Check if user is member of the default_SAP_group.
+# Check if user is member of the USER_SAP_GROUP.
 if [ -z "${cgroup}" ] ; then
 	groups=$(id -nG "${PAM_USER}")
-	if [[ "${groups}" =~ (^| )${default_SAP_group}( |$) ]] ; then
-		cgroup="${default_cgroup}"
-		log "User \"${PAM_USER}\" is a member of group \"${default_SAP_group}\"." debug
+	if [[ "${groups}" =~ (^| )${USER_SAP_GROUP}( |$) ]] ; then
+		cgroup="${DEFAULT_CGROUP}"
+		log "User \"${PAM_USER}\" is a member of group \"${USER_SAP_GROUP}\"." debug
 	else
-		log "User \"${PAM_USER}\" is not a member of group \"${default_SAP_group}\"." debug
+		log "User \"${PAM_USER}\" is not a member of group \"${USER_SAP_GROUP}\"." debug
 	fi
 fi
 
