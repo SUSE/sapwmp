@@ -23,7 +23,6 @@ Version: 0.1
 Release: 0
 Group: Applications/System
 Vendor: SUSE GmbH
-BuildArch: noarch
 URL: http://www.suse.com
 
 Source0: %{name}-%{version}.tar.xz
