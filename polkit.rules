@@ -1,0 +1,13 @@
+// TODO proper group/uid binding
+// TODO restrict to transient_unit_start
+polkit.addRule(function(action, subject) {
+    polkit.log("action=" + action);
+    polkit.log("subject=" + subject);
+
+    if (action.id == "org.freedesktop.systemd1.manage-units" &&
+        subject.isInGroup("users")) {
+        polkit.log("allowed");
+        return polkit.Result.YES;
+    }
+    polkit.log("denied");
+});
