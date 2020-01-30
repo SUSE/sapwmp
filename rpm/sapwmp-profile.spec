@@ -1,5 +1,5 @@
 #
-# spec file for package sapwmp2
+# spec file for package sapwmp-profile
 #
 # Copyright (c) 2020 SUSE LINUX GmbH, Nuernberg, Germany.
 #
@@ -16,8 +16,8 @@
 #
 
 
-Name: sapwmp
-Summary: Configuration for collecting SAP processes under control group
+Name: sapwmp-profile
+Summary: Configuration and utilities for collecting SAP processes under control group
 License: GPL-2.0
 Version: 0.1
 Release: 0
@@ -26,7 +26,7 @@ Vendor: SUSE GmbH
 BuildArch: noarch
 URL: http://www.suse.com
 
-Source0: sapwmp-%{version}.tar.xz
+Source0: %{name}-%{version}.tar.xz
 Source1: sysconfig.sapwmp
 Source2: service-wmp.conf
 Source3: sap.slice
@@ -41,7 +41,7 @@ Requires(post): %fillup_prereq
 %{?systemd_requires}
 
 %description
-Configuration for collecting SAP processes under control group to apply resource control.
+Configuration and utilities for collecting SAP processes under control group to apply resource control.
 
 %prep
 %setup -q
@@ -61,6 +61,7 @@ install -D -m 744 %{SOURCE4} %{buildroot}/usr/share/polkit-1/rules.d/50-sapwmp.r
 
 %files
 %defattr(-,root,root)
+%{_bindir}/sapwmp-capture
 %config %{_fillupdir}/sysconfig.sapwmp
 %dir %{_unitdir}/sapinit.service.d
 %{_unitdir}/sapinit.service.d/10-wmp.conf

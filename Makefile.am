@@ -1,6 +1,6 @@
-bin_PROGRAMS = sdcapture
-sdcapture_CFLAGS = \
+bin_PROGRAMS = sapwmp-capture
+sapwmp_capture_CFLAGS = \
 	$(LIBSYSTEMD_CGLAGS)
-sdcapture_LDADD = \
+sapwmp_capture_LDADD = \
 	$(LIBSYSTEMD_LIBS)
-sdcapture_SOURCES = src/main.c
+sapwmp_capture_SOURCES = src/main.c

@@ -10,6 +10,6 @@ configure
 depcomp
 install-sh
 missing
-sdcapture
+sapwmp-capture
 src/.deps/
 src/.dirstamp
