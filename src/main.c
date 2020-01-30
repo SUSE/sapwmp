@@ -7,7 +7,10 @@
 #include <systemd/sd-bus.h>
 #include <unistd.h>
 
+#define CGROUP_LIMIT_MAX ((uint64_t) -1)
+
 #define _cleanup_(x) __attribute__((cleanup(x)))
+
 static inline void freep(void *p) {
 	free(*(void **)p);
 }
@@ -57,7 +60,10 @@ int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
 	if (r < 0)
 		return log_error(r);
 
-	// TODO MemoryLow=infinity
+	/* Parent slice will control actual limit */
+	r = sd_bus_message_append(m, "(sv)", "MemoryLow", "t", CGROUP_LIMIT_MAX);
+	if (r < 0)
+		return log_error(r);
 
 	assert(n_pids == 1); // TODO pass multiple args
 	r = sd_bus_message_append(m, "(sv)", "PIDs", "au", 1, (uint32_t) pids[0]);
