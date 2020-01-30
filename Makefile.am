@@ -3,4 +3,4 @@ sdcapture_CFLAGS = \
 	$(LIBSYSTEMD_CGLAGS)
 sdcapture_LDADD = \
 	$(LIBSYSTEMD_LIBS)
-sdcapture_SOURCES = main.c
+sdcapture_SOURCES = src/main.c

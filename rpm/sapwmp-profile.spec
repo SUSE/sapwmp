@@ -32,6 +32,8 @@ Source2: service-wmp.conf
 Source3: sap.slice
 Source4: polkit.rules
 
+BuildRequires: autoconf
+BuildRequires: automake
 BuildRequires: systemd-rpm-macros
 BuildRequires: systemd-devel
 Requires(post): %fillup_prereq
