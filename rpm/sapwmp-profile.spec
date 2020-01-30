@@ -26,10 +26,11 @@ Vendor: SUSE GmbH
 BuildArch: noarch
 URL: http://www.suse.com
 
-Source0: polkit.rules
+Source0: sapwmp-%{version}.tar.xz
 Source1: sysconfig.sapwmp
 Source2: service-wmp.conf
 Source3: sap.slice
+Source4: polkit.rules
 
 BuildRequires: systemd-rpm-macros
 BuildRequires: systemd-devel
@@ -50,10 +51,10 @@ Configuration for collecting SAP processes under control group to apply resource
 
 %install
 %make_install
-install -D -m 744 %{SOURCE0} %{buildroot}/usr/share/polkit-1/rules.d/50-sapwmp.rules
 install -D -m 644 %{SOURCE1} %{buildroot}/%{_fillupdir}/sysconfig.sapwmp
 install -D -m 644 %{SOURCE2} %{buildroot}%{_unitdir}/sapinit.service.d/10-wmp.conf
 install -D -m 644 %{SOURCE3} %{buildroot}%{_unitdir}/sap.slice
+install -D -m 744 %{SOURCE4} %{buildroot}/usr/share/polkit-1/rules.d/50-sapwmp.rules
 
 
 %files
