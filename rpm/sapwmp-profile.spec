@@ -31,13 +31,11 @@ Source1: sysconfig.sapwmp
 Source2: service-wmp.conf
 Source3: sap.slice
 
-BuildRequires: systemd-rpm-macros #TODO review
-BuildRequires: systemd-devel #TODO review
-Requires: util-linux-systemd #TODO review
-Requires: /bin/bash #TODO review
-Requires: /usr/bin/getent #TODO review
-Requires(post): %fillup_prereq #TODO review
-%{?systemd_requires} #TODO review
+BuildRequires: systemd-rpm-macros
+BuildRequires: systemd-devel
+Requires(post): %fillup_prereq
+#TODO review
+%{?systemd_requires}
 
 %description
 Configuration for collecting SAP processes under control group to apply resource control.
