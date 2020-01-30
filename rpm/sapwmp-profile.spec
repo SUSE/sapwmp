@@ -21,7 +21,7 @@ Summary: Configuration and utilities for collecting SAP processes under control 
 License: GPL-2.0
 Version: 0.1
 Release: 0
-Group: Applications/System
+Group: Productivity/Databases/Servers
 Vendor: SUSE GmbH
 URL: http://www.suse.com
 
@@ -63,7 +63,6 @@ install -D -m 644 %{SOURCE4} %{buildroot}%{_datadir}/polkit-1/rules.d/50-sapwmp.
 %files
 %defattr(-,root,root)
 %{_bindir}/sapwmp-capture
-%config %{_fillupdir}/sysconfig.sapwmp
 %dir %{_unitdir}/sapinit.service.d
 %{_unitdir}/sapinit.service.d/10-wmp.conf
 %{_unitdir}/sap.slice
