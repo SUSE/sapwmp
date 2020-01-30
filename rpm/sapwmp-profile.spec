@@ -57,7 +57,7 @@ Configuration and utilities for collecting SAP processes under control group to 
 install -D -m 644 %{SOURCE1} %{buildroot}/%{_fillupdir}/sysconfig.sapwmp
 install -D -m 644 %{SOURCE2} %{buildroot}%{_unitdir}/sapinit.service.d/10-wmp.conf
 install -D -m 644 %{SOURCE3} %{buildroot}%{_unitdir}/sap.slice
-install -D -m 744 %{SOURCE4} %{buildroot}%{_datadir}/polkit-1/rules.d/50-sapwmp.rules
+install -D -m 644 %{SOURCE4} %{buildroot}%{_datadir}/polkit-1/rules.d/50-sapwmp.rules
 
 
 %files
