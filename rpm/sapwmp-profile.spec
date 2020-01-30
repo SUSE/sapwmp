@@ -38,7 +38,6 @@ BuildRequires: systemd-devel
 BuildRequires: polkit
 Requires(post): %fillup_prereq
 Requires: polkit
-#TODO review
 %{?systemd_requires}
 
 %description
@@ -72,7 +71,6 @@ install -D -m 644 %{SOURCE4} %{buildroot}%{_datadir}/polkit-1/rules.d/50-sapwmp.
 
 %post
 %fillup_only -n sapwmp
-# TODO make sure we're compatible with common-session-pc
 if grep -q " cgroup .*memory" /proc/mounts ; then
 	echo "Warning: Found memory controller on v1 hierarchy. Make sure unified hierarchy only is used."
 fi

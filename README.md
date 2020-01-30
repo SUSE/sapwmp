@@ -1,28 +1,30 @@
 # WMP configuration
 
-This repo and scripts serves to provide reference configuration files, their
+This repo and scripts serve to provide reference configuration files, their
 version tracking and reproducible deployment as RPM package.
 
 ## How to use this
 
-  * Install/remove RPM `sapwmp`.
+  * Install/remove RPM `sapwmp-profile`.
+  * Update SAP profiles (TODO add more info)
 
 ## Making updates
 
-  * Commit into git, the trigger service in [IBS project](https://build.suse.de/package/show/home:mkoutny:wmp/sapwmp)
+  * Commit into git, the trigger service in [IBS project](https://build.suse.de/package/show/home:mkoutny:wmp/sapwmp-profile)
     to rebuild RPM.
-  * Use different branches for different approaches.
 
 ## TODO
 
-  * PAM: Black/white listing based on `comm`
-  * PAM: Simplify sources of applicable users?
-  * PAM: modifying common-session vs common-session-pc
+  * capture: more reliable parent(s) PID detection
+  * capture: randomize scope names
+  * capture: configurable sap.slice
+
+  * polkit: restrict to particular DBus API call and target slice
 
   * cgroup: children with infinity or enable only on parent?
-  * cgroup: make sure target cgroup exists (e.g. in HA)
 
   * RPM: fillup removal?
   * RPM: daemon-reload post install
+  * RPM: polkit restart post install
 
   * doc
