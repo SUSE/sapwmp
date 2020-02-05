@@ -19,12 +19,10 @@ version tracking and reproducible deployment as RPM package.
   * capture: randomize scope names
   * capture: configurable sap.slice
 
-  * polkit: restrict to particular DBus API call and target slice
-
   * cgroup: children with infinity or enable only on parent?
 
   * RPM: fillup removal?
   * RPM: daemon-reload post install
-  * RPM: polkit restart post install
+  * RPM: ensure existence of sapsys group before installation
 
   * doc

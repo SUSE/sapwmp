@@ -116,8 +116,6 @@ int main(int argc, char *argv[]) {
 	// TODO load from config
 	slice = "sap.slice";
 
-	/* Note: Instead of user checking internally, rely on polkit rules */
-
 	r = sd_bus_open_system(&bus);
 	if (r < 0) 
 		return log_error(r);

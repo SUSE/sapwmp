@@ -15,6 +15,7 @@
 # Please submit bugfixes or comments via http://bugs.opensuse.org/
 #
 
+%define group_sapsys sapsys
 
 Name: sapwmp-profile
 Summary: Configuration and utilities for collecting SAP processes under control group
@@ -29,15 +30,12 @@ Source0: %{name}-%{version}.tar.xz
 Source1: sysconfig.sapwmp
 Source2: service-wmp.conf
 Source3: sap.slice
-Source4: polkit.rules
 
 BuildRequires: autoconf
 BuildRequires: automake
 BuildRequires: systemd-rpm-macros
 BuildRequires: systemd-devel
-BuildRequires: polkit
 Requires(post): %fillup_prereq
-Requires: polkit
 %{?systemd_requires}
 
 %description
@@ -56,28 +54,27 @@ Configuration and utilities for collecting SAP processes under control group to 
 install -D -m 644 %{SOURCE1} %{buildroot}/%{_fillupdir}/sysconfig.sapwmp
 install -D -m 644 %{SOURCE2} %{buildroot}%{_unitdir}/sapinit.service.d/10-wmp.conf
 install -D -m 644 %{SOURCE3} %{buildroot}%{_unitdir}/sap.slice
-install -D -m 644 %{SOURCE4} %{buildroot}%{_datadir}/polkit-1/rules.d/50-sapwmp.rules
 
 
 %files
 %defattr(-,root,root)
-%{_bindir}/sapwmp-capture
+%attr(1750,root,%{group_sapsys}) %{_sbindir}/sapwmp-capture
 %dir %{_unitdir}/sapinit.service.d
 %{_unitdir}/sapinit.service.d/10-wmp.conf
 %{_unitdir}/sap.slice
 %{_fillupdir}/sysconfig.sapwmp
-%{_datadir}/polkit-1/rules.d/50-sapwmp.rules
 %doc
+
+%pre
+getent group %{group_sapsys} >/dev/null || echo "Warning: %{group_sapsys} group not found"
 
 %post
 %fillup_only -n sapwmp
 if grep -q " cgroup .*memory" /proc/mounts ; then
 	echo "Warning: Found memory controller on v1 hierarchy. Make sure unified hierarchy only is used."
 fi
-# TODO reload/restart polkit
 
 
 %postun
-# TODO reload/restart polkit
 
 %changelog

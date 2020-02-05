@@ -1,4 +1,4 @@
-bin_PROGRAMS = sapwmp-capture
+sbin_PROGRAMS = sapwmp-capture
 sapwmp_capture_CFLAGS = \
 	$(LIBSYSTEMD_CGLAGS)
 sapwmp_capture_LDADD = \
