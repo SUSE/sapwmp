@@ -8,19 +8,12 @@
 #include <unistd.h>
 
 #define CGROUP_LIMIT_MAX ((uint64_t) -1)
+#include "log.h"
 
 #define _cleanup_(x) __attribute__((cleanup(x)))
 
 static inline void freep(void *p) {
 	free(*(void **)p);
-}
-
-int log_error(int r) {
-	fprintf(stderr, "Error: %s\n", strerror(errno));
-	return r;
-}
-void log_info(const char *m) {
-	fprintf(stderr, "%s\n", m);
 }
 
 int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
@@ -38,49 +31,47 @@ int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
 		"StartTransientUnit");
 
 	if (r < 0)
-		return log_error(r);
+		return r;
 
 	r = sd_bus_message_append(m, "ss", target_unit, "fail");
 	if (r < 0)
-		return log_error(r);
+		return r;
 
 	r = sd_bus_message_open_container(m, 'a', "(sv)");
 	if (r < 0)
-		return log_error(r);
-
-	/* Set properties */
+		return r;
 
 	/* These scopes are for resource control only, processes must be
 	 * stopped by other means, only the scope terminates*/
 	r = sd_bus_message_append(m, "(sv)", "KillMode", "s", "none");
 	if (r < 0)
-		return log_error(r);
+		return r;
 
 	r = sd_bus_message_append(m, "(sv)", "Slice", "s", target_slice);
 	if (r < 0)
-		return log_error(r);
+		return r;
 
 	/* Parent slice will control actual limit */
 	r = sd_bus_message_append(m, "(sv)", "MemoryLow", "t", CGROUP_LIMIT_MAX);
 	if (r < 0)
-		return log_error(r);
+		return r;
 
 	assert(n_pids == 1); // TODO pass multiple args
 	r = sd_bus_message_append(m, "(sv)", "PIDs", "au", 1, (uint32_t) pids[0]);
 	if (r < 0)
-		return log_error(r);
+		return r;
 
 	r = sd_bus_message_close_container(m);
 	if (r < 0)
-		return log_error(r);
+		return r;
 
         r = sd_bus_message_append(m, "a(sa(sv))", 0);
         if (r < 0)
-		return log_error(r);
+		return r;
 
         r = sd_bus_call(bus, m, 0, &bus_error, NULL);
 	if (r < 0) {
-		fprintf(stderr, "call error: %s\n", strerror(sd_bus_error_get_errno(&bus_error)));
+		log_info("DBus call error: %s\n", strerror(sd_bus_error_get_errno(&bus_error)));
 	}
 	/* ignore reply, i.e. don't wait for the job to finish */
 	return r;
@@ -107,7 +98,7 @@ int main(int argc, char *argv[]) {
 
 	n_pids = collect_pids(&pids);
 	if (n_pids < 0)
-		return log_error(n_pids);
+		return ret_log_errno("Failed collecting PIDs", n_pids);
 	else if (n_pids == 0)
 		return 0;
 
@@ -118,11 +109,11 @@ int main(int argc, char *argv[]) {
 
 	r = sd_bus_open_system(&bus);
 	if (r < 0) 
-		return log_error(r);
+		return ret_log_errno("Failed opening DBus", r);
 
 	r = migrate(bus, unit_name, slice, n_pids, pids);
 	if (r < 0) 
-		return log_error(r);
+		return log_errno(r);
 
 	log_info("Successful capture");
 	return 0;
