@@ -15,9 +15,9 @@ version tracking and reproducible deployment as RPM package.
 
 ## TODO
 
-  * capture: more reliable parent(s) PID detection
   * capture: randomize scope names
   * capture: configurable sap.slice
+  * capture: configurable parent(s) PID detection
 
   * cgroup: children with infinity or enable only on parent?
 

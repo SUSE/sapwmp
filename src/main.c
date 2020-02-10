@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <linux/limits.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,8 +8,11 @@
 #include <systemd/sd-bus.h>
 #include <unistd.h>
 
-#define CGROUP_LIMIT_MAX ((uint64_t) -1)
 #include "log.h"
+
+#define CGROUP_LIMIT_MAX	((uint64_t) -1)
+#define TASK_COMM_LEN		18	/* +2 for parentheses */
+#define MAX_PIDS		16
 
 #define _cleanup_(x) __attribute__((cleanup(x)))
 
@@ -37,6 +41,8 @@ int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
 	if (r < 0)
 		return r;
 
+	/* Set properties */
+
 	r = sd_bus_message_open_container(m, 'a', "(sv)");
 	if (r < 0)
 		return r;
@@ -56,15 +62,45 @@ int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
 	if (r < 0)
 		return r;
 
-	assert(n_pids == 1); // TODO pass multiple args
-	r = sd_bus_message_append(m, "(sv)", "PIDs", "au", 1, (uint32_t) pids[0]);
+	/* PIDs array
+	 * container nesting: (sv(a(u)))
+	 */
+	r = sd_bus_message_open_container(m, 'r', "sv");
+	if (r < 0)
+		return r;
+	r = sd_bus_message_append(m, "s", "PIDs");
 	if (r < 0)
 		return r;
 
-	r = sd_bus_message_close_container(m);
+	r = sd_bus_message_open_container(m, 'v', "au");
 	if (r < 0)
 		return r;
 
+	r = sd_bus_message_open_container(m, 'a', "u");
+	if (r < 0)
+		return r;
+
+	for (size_t i = 0; i < n_pids; i++) {
+		r = sd_bus_message_append(m, "u", (uint32_t) pids[i]);
+	}
+
+	r = sd_bus_message_close_container(m); /* au */
+	if (r < 0)
+		return r;
+
+	r = sd_bus_message_close_container(m); /* v(au) */
+	if (r < 0)
+		return r;
+
+	r = sd_bus_message_close_container(m); /* (sv) */
+	if (r < 0)
+		return r;
+
+	r = sd_bus_message_close_container(m); /* properties array */
+	if (r < 0)
+		return r;
+
+	/* Aux array */
         r = sd_bus_message_append(m, "a(sa(sv))", 0);
         if (r < 0)
 		return r;
@@ -77,16 +113,71 @@ int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
 	return r;
 }
 
+int read_stat(pid_t pid, pid_t *ppid, char *rcomm) {
+	char path[PATH_MAX];
+	char *comm = NULL;
+	FILE *f;
+	int r;
+
+	r = snprintf(path, PATH_MAX, "/proc/%i/stat", pid);
+	if (r < 0)
+		return r;
+
+	f = fopen(path, "r");
+	if (!f)
+		return errno;
+
+	r = fscanf(f, "%*d %ms %*c %d", &comm, ppid);
+	if (r < 0) {
+		r = errno;
+		goto final;
+	} else if (r < 2) {
+		r = -EINVAL;
+		goto final;
+	}
+
+	/* silently truncate if needed */
+	strncpy(rcomm, comm, TASK_COMM_LEN);
+	rcomm[TASK_COMM_LEN] = '\0';
+	r = 0;
+final:
+	free(comm);
+	fclose(f);
+	return r;
+}
+
 int collect_pids(pid_t **rpids) {
-	pid_t *pids = malloc(sizeof(pid_t));
+	int n_pids = 0;
+	pid_t pid, ppid;
+	char comm[TASK_COMM_LEN + 1]; 
+	pid_t *pids;
+
+	assert(rpids);
+
+	pids = malloc(sizeof(pid_t) * MAX_PIDS);
 	if (!pids)
 		return -ENOMEM;
 
-	// TODO traverse all parents
-	// TODO check actual executables
-	pids[0] = getppid();
+	pid = getppid();
+	while (pid > 1 && n_pids < MAX_PIDS) {
+		if (read_stat(pid, &ppid, comm))
+			goto err;
+		// TODO check actual executables
+		// TODO or make this configurable
+		if (!strcmp(comm, "(sapstart)") ||
+		    !strcmp(comm, "(sapstartsrv)") ||
+		    !strcmp(comm, "(fish)")) {
+			pids[n_pids++] = pid;
+		}
+		pid = ppid;
+	}
+
 	*rpids = pids;
-	return 1;
+	return n_pids;
+
+err:
+	free(pids);
+	return -ESRCH;
 }
 
 int main(int argc, char *argv[]) {
