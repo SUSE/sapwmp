@@ -15,7 +15,6 @@ version tracking and reproducible deployment as RPM package.
 
 ## TODO
 
-  * capture: randomize scope names
   * capture: configurable sap.slice
   * capture: configurable parent(s) PID detection
 

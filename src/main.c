@@ -12,6 +12,7 @@
 
 #define CGROUP_LIMIT_MAX	((uint64_t) -1)
 #define TASK_COMM_LEN		18	/* +2 for parentheses */
+#define UNIT_NAME_LEN		128
 #define MAX_PIDS		16
 
 #define _cleanup_(x) __attribute__((cleanup(x)))
@@ -180,12 +181,30 @@ err:
 	return -ESRCH;
 }
 
+static int make_scope_name(char *buf) {
+	sd_id128_t rnd;
+	int r;
+        r = sd_id128_randomize(&rnd);
+	if (r < 0)
+		return r;
+
+	/* -r stands for random
+	 * 128 bit should be enough for anyone to avoid collisions */
+	r = snprintf(buf, UNIT_NAME_LEN,
+		     "wmp-r" SD_ID128_FORMAT_STR ".scope", SD_ID128_FORMAT_VAL(rnd));
+	if (r < 0)
+		return r;
+
+	return 0;
+}
+
 int main(int argc, char *argv[]) {
 	_cleanup_(sd_bus_flush_close_unrefp) sd_bus *bus = NULL;
 	_cleanup_(freep) pid_t *pids = NULL;
-	int r;
-	char *unit_name, *slice;
+	char unit_name[UNIT_NAME_LEN];
+	char *slice;
 	int n_pids;
+	int r;
 
 	n_pids = collect_pids(&pids);
 	if (n_pids < 0)
@@ -193,8 +212,10 @@ int main(int argc, char *argv[]) {
 	else if (n_pids == 0)
 		return 0;
 
-	// TODO non-colliding name
-	unit_name = "instance.scope";
+	r = make_scope_name(unit_name);
+	if (r < 0)
+		return log_errno(r);
+
 	// TODO load from config
 	slice = "sap.slice";
 
@@ -206,6 +227,6 @@ int main(int argc, char *argv[]) {
 	if (r < 0) 
 		return log_errno(r);
 
-	log_info("Successful capture");
+	log_info("Successful capture into %s", unit_name);
 	return 0;
 }
