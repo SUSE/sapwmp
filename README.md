@@ -15,8 +15,6 @@ version tracking and reproducible deployment as RPM package.
 
 ## TODO
 
-  * cgroup: children with infinity or enable only on parent?
-
   * RPM: fillup removal?
   * RPM: daemon-reload post install
   * RPM: ensure existence of sapsys group before installation
