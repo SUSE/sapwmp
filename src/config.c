@@ -13,6 +13,9 @@ int config_init(struct config *config) {
 	if (!config->slice)
 		return -ENOMEM;
 
+	config->parent_commands.data = NULL;
+	config->parent_commands.list = NULL;
+
 	return 0;
 }
 
@@ -43,6 +46,40 @@ static char *unquote(char *s) {
 	}
 
 	return s;
+}
+
+/*
+ * Split string @s by delimiters @delim and store the structure into list
+ * pointed by @rl.
+ * New list is allocated and s ownership is passed to @rl.
+ */
+static int parse_list(struct str_list *rl, char *s, const char *delim) {
+	char *c;
+	struct str_list l;
+	char **pl;
+	int n = 1;
+
+	l.data = s;
+	s = strstrip(s, delim);
+	for (c = s; *c; c++)
+		if (strchr(delim, *c))
+			n++;
+
+	/* Add one for NULL terminated list */
+	l.list = calloc(n + 1, sizeof(char *));
+	if (!l.list)
+		return -ENOMEM;
+
+	pl = l.list;
+	while ((c = strsep(&s, delim))) {
+		*(pl++) = c;
+	}
+
+	free(rl->list);
+	free(rl->data);
+	rl->data = l.data;
+	rl->list = l.list;
+	return 0;
 }
 
 /*
@@ -88,6 +125,12 @@ int config_load(struct config *config, char *filename) {
 		if (!strcmp("DEFAULT_SLICE", k)) {
 			free(config->slice);
 			config->slice = v;
+		} else if (!strcmp("PARENT_COMMANDS", k)) {
+			if (parse_list(&config->parent_commands, v, ",")) {
+				free(v);
+				log_info("config: Parsing failed for '%s'\n", k);
+				continue;
+			}
 		} else {
 			free(v);
 			log_info("config: Ignoring key '%s'\n", k);

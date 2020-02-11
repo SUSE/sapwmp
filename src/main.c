@@ -120,7 +120,7 @@ int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
 
 int read_stat(pid_t pid, pid_t *ppid, char *rcomm) {
 	char path[PATH_MAX];
-	char *comm = NULL;
+	char *comm = NULL, *p;
 	FILE *f;
 	int r;
 
@@ -141,8 +141,13 @@ int read_stat(pid_t pid, pid_t *ppid, char *rcomm) {
 		goto final;
 	}
 
-	/* silently truncate if needed */
-	strncpy(rcomm, comm, TASK_COMM_LEN);
+	/* Strip parentheses and silently truncate if needed */
+	if ((p = strrchr(comm, ')'))) {
+		*p = '\0';
+		strncpy(rcomm, comm+1, TASK_COMM_LEN);
+	} else {
+		strncpy(rcomm, comm, TASK_COMM_LEN);
+	}
 	rcomm[TASK_COMM_LEN] = '\0';
 	r = 0;
 final:
@@ -167,12 +172,12 @@ int collect_pids(pid_t **rpids) {
 	while (pid > 1 && n_pids < MAX_PIDS) {
 		if (read_stat(pid, &ppid, comm))
 			goto err;
-		// TODO check actual executables
-		// TODO or make this configurable
-		if (!strcmp(comm, "(sapstart)") ||
-		    !strcmp(comm, "(sapstartsrv)") ||
-		    !strcmp(comm, "(fish)")) {
-			pids[n_pids++] = pid;
+
+		for (char **p = config.parent_commands.list; *p; p++) {
+			if(!strcmp(comm, *p)) {
+				pids[n_pids++] = pid;
+				break;
+			}
 		}
 		pid = ppid;
 	}
