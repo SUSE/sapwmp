@@ -8,14 +8,18 @@
 #include <systemd/sd-bus.h>
 #include <unistd.h>
 
+#include "config.h"
 #include "log.h"
 
 #define CGROUP_LIMIT_MAX	((uint64_t) -1)
+#define MAX_PIDS		16
+#define CONF_FILE		"/etc/sysconfig/sapwmp"
 #define TASK_COMM_LEN		18	/* +2 for parentheses */
 #define UNIT_NAME_LEN		128
-#define MAX_PIDS		16
 
 #define _cleanup_(x) __attribute__((cleanup(x)))
+
+struct config config;
 
 static inline void freep(void *p) {
 	free(*(void **)p);
@@ -202,9 +206,16 @@ int main(int argc, char *argv[]) {
 	_cleanup_(sd_bus_flush_close_unrefp) sd_bus *bus = NULL;
 	_cleanup_(freep) pid_t *pids = NULL;
 	char unit_name[UNIT_NAME_LEN];
-	char *slice;
 	int n_pids;
 	int r;
+
+	r = config_init(&config);
+	if (r < 0)
+		return ret_log_errno("Failed config init", r);
+
+	r = config_load(&config, CONF_FILE);
+	if (r < 0)
+		return ret_log_errno("Failed loading config", r);
 
 	n_pids = collect_pids(&pids);
 	if (n_pids < 0)
@@ -214,19 +225,26 @@ int main(int argc, char *argv[]) {
 
 	r = make_scope_name(unit_name);
 	if (r < 0)
-		return log_errno(r);
+		return ret_log_errno("Failed creating scope name", r);
 
-	// TODO load from config
-	slice = "sap.slice";
+	log_info("Found PIDs: ");
+	for (int i = 0; i < n_pids; i++) {
+		log_info("%i, ", pids[i]);
+	}
+	log_info("\n");
 
 	r = sd_bus_open_system(&bus);
 	if (r < 0) 
 		return ret_log_errno("Failed opening DBus", r);
 
-	r = migrate(bus, unit_name, slice, n_pids, pids);
-	if (r < 0) 
-		return log_errno(r);
+	r = migrate(bus, unit_name, config.slice, n_pids, pids);
+	if (r < 0) {
+		log_error("Failed capture into %s/%s", config.slice, unit_name);
+		return r;
+	}
 
-	log_info("Successful capture into %s", unit_name);
+	log_info("Successful capture into %s/%s", config.slice, unit_name);
+
+	/* skip config_deinit */
 	return 0;
 }
