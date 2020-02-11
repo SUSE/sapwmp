@@ -18,5 +18,8 @@ version tracking and reproducible deployment as RPM package.
   * RPM: fillup removal?
   * RPM: daemon-reload post install
   * RPM: ensure existence of sapsys group before installation
+  * RPM: changelog generation
+  * RPM: add manpage
+  * RPM: allowed group
 
   * doc
