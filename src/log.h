@@ -19,6 +19,7 @@ static inline void _log(int level /*unused*/, const char *fmt, ...) {
 	va_end(ap);
 }
 
+static inline void exit_log(int status, int e, const char *fmt, ...) __attribute__ ((noreturn));
 static inline void exit_log(int status, int e, const char *fmt, ...) {
 	va_list ap;
 

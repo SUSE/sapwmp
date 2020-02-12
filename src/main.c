@@ -87,6 +87,8 @@ int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
 
 	for (size_t i = 0; i < n_pids; i++) {
 		r = sd_bus_message_append(m, "u", (uint32_t) pids[i]);
+		if (r < 0)
+			return r;
 	}
 
 	r = sd_bus_message_close_container(m); /* au */
@@ -130,11 +132,11 @@ int read_stat(pid_t pid, pid_t *ppid, char *rcomm) {
 
 	f = fopen(path, "r");
 	if (!f)
-		return errno;
+		return -errno;
 
 	r = fscanf(f, "%*d %ms %*c %d", &comm, ppid);
 	if (r < 0) {
-		r = errno;
+		r = -errno;
 		goto final;
 	} else if (r < 2) {
 		r = -EINVAL;

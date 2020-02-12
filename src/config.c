@@ -92,7 +92,7 @@ int config_load(struct config *config, char *filename) {
 	char buf[LINE_LEN];
 	char *line, *e, *k, *v;
 	FILE *f = fopen(filename, "r");
-	int r;
+	int r = -EINVAL;
 
 	if (!f)
 		return -errno;
@@ -136,6 +136,7 @@ int config_load(struct config *config, char *filename) {
 			log_info("config: Ignoring key '%s'\n", k);
 		}
 	}
+	r = 0;
 
 final:
 	fclose(f);
