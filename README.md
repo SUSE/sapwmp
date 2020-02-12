@@ -15,7 +15,6 @@ version tracking and reproducible deployment as RPM package.
 
 ## TODO
 
-  * RPM: daemon-reload post install
   * RPM: ensure existence of sapsys group before installation
   * RPM: changelog generation
   * RPM: add manpage
