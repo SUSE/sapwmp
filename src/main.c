@@ -181,6 +181,8 @@ int collect_pids(pid_t **rpids) {
 		}
 		pid = ppid;
 	}
+	if (n_pids == MAX_PIDS && pid > 1)
+		log_info("Incomplete forking hierarchy search after %i PIDs found\n", MAX_PIDS);
 
 	*rpids = pids;
 	return n_pids;
