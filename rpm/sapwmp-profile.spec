@@ -58,7 +58,7 @@ install -D -m 644 %{SOURCE3} %{buildroot}%{_unitdir}/sap.slice
 
 %files
 %defattr(-,root,root)
-%attr(1750,root,%{group_sapsys}) %{_sbindir}/sapwmp-capture
+%attr(4750,root,%{group_sapsys}) %{_sbindir}/sapwmp-capture
 %dir %{_unitdir}/sapinit.service.d
 %{_unitdir}/sapinit.service.d/10-wmp.conf
 %{_unitdir}/sap.slice
