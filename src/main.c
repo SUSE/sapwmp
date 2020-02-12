@@ -207,12 +207,33 @@ static int make_scope_name(char *buf) {
 	return 0;
 }
 
+static void print_help(const char *name) {
+	fprintf(stderr, "Usage: %s [-h]\n", name);
+	fprintf(stderr, "       -h	Show this help\n");
+}
+
 int main(int argc, char *argv[]) {
 	_cleanup_(sd_bus_flush_close_unrefp) sd_bus *bus = NULL;
 	_cleanup_(freep) pid_t *pids = NULL;
 	char unit_name[UNIT_NAME_LEN];
+	int opt;
 	int n_pids;
 	int r;
+
+	while ((opt = getopt(argc, argv, "h")) != -1) {
+		switch (opt) {
+		case 'h':
+			print_help(argv[0]);
+			return EXIT_SUCCESS;
+		default:
+			log_error("Unknown option(s), use -h for help\n");
+			return EXIT_FAILURE;
+		}
+	}
+	if (optind < argc) {
+		log_error("Unexpected argument(s), use -h for help\n");
+		return EXIT_FAILURE;
+	}
 
 	r = config_init(&config);
 	if (r < 0)
