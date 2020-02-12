@@ -67,6 +67,12 @@ int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
 	if (r < 0)
 		return r;
 
+	/* By default these scopes shouldn't apply the default finite limit,
+	 * see also SLE-10123. */
+	r = sd_bus_message_append(m, "(sv)", "TasksMax", "t", CGROUP_LIMIT_MAX);
+	if (r < 0)
+		return r;
+
 	/* PIDs array
 	 * container nesting: (sv(a(u)))
 	 */
