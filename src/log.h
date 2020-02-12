@@ -7,16 +7,26 @@
 #define log_error(...)	_log(LOG_ERR, __VA_ARGS__)
 #define log_info(...)	_log(LOG_INFO, __VA_ARGS__)
 
+static inline void _logv(int level /*unused*/, const char *fmt, va_list ap) {
+	vfprintf(stderr, fmt, ap);
+}
+
 static inline void _log(int level /*unused*/, const char *fmt, ...) {
 	va_list ap;
 
 	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
+	_logv(level, fmt, ap);
 	va_end(ap);
 }
 
-static inline int ret_log_errno(const char *msg, int e) {
-	log_error("%s: %s\n", strerror(-e));
-	return e;
+static inline void exit_log(int status, int e, const char *fmt, ...) {
+	va_list ap;
+
+	va_start(ap, fmt);
+	_logv(LOG_ERR, fmt, ap);
+	va_end(ap);
+
+	log_error(": %s\n", strerror(-e));
+	exit(status);
 }
 

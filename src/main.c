@@ -248,21 +248,21 @@ int main(int argc, char *argv[]) {
 
 	r = config_init(&config);
 	if (r < 0)
-		return ret_log_errno("Failed config init", r);
+		exit_log(EXIT_FAILURE, r, "Failed config init");
 
 	r = config_load(&config, CONF_FILE);
 	if (r < 0)
-		return ret_log_errno("Failed loading config", r);
+		exit_log(EXIT_FAILURE, r, "Failed loading config");
 
 	n_pids = collect_pids(&pids);
 	if (n_pids < 0)
-		return ret_log_errno("Failed collecting PIDs", n_pids);
+		exit_log(EXIT_FAILURE, n_pids, "Failed collecting PIDs");
 	else if (n_pids == 0)
 		return 0;
 
 	r = make_scope_name(unit_name);
 	if (r < 0)
-		return ret_log_errno("Failed creating scope name", r);
+		exit_log(EXIT_FAILURE, r, "Failed creating scope name");
 
 	log_info("Found PIDs: ");
 	for (int i = 0; i < n_pids; i++) {
@@ -272,13 +272,11 @@ int main(int argc, char *argv[]) {
 
 	r = sd_bus_open_system(&bus);
 	if (r < 0) 
-		return ret_log_errno("Failed opening DBus", r);
+		exit_log(EXIT_FAILURE, r, "Failed opening DBus");
 
 	r = migrate(bus, unit_name, config.slice, n_pids, pids);
-	if (r < 0) {
-		log_error("Failed capture into %s/%s", config.slice, unit_name);
-		return r;
-	}
+	if (r < 0)
+		exit_log(EXIT_FAILURE, r, "Failed capture into %s/%s", config.slice, unit_name);
 
 	log_info("Successful capture into %s/%s", config.slice, unit_name);
 
