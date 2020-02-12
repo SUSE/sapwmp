@@ -208,20 +208,25 @@ static int make_scope_name(char *buf) {
 }
 
 static void print_help(const char *name) {
-	fprintf(stderr, "Usage: %s [-h]\n", name);
+	fprintf(stderr, "Usage: %s [-h] -a\n", name);
 	fprintf(stderr, "       -h	Show this help\n");
+	fprintf(stderr, "       -a	Put chosen ancestor processes under WMP scope\n");
+	fprintf(stderr, "       	(similar to systemd-run --scope)\n");
 }
 
 int main(int argc, char *argv[]) {
 	_cleanup_(sd_bus_flush_close_unrefp) sd_bus *bus = NULL;
 	_cleanup_(freep) pid_t *pids = NULL;
 	char unit_name[UNIT_NAME_LEN];
-	int opt;
+	int opt, ancestors = 0;
 	int n_pids;
 	int r;
 
-	while ((opt = getopt(argc, argv, "h")) != -1) {
+	while ((opt = getopt(argc, argv, "ah")) != -1) {
 		switch (opt) {
+		case 'a':
+			ancestors = 1;
+			break;
 		case 'h':
 			print_help(argv[0]);
 			return EXIT_SUCCESS;
@@ -232,6 +237,10 @@ int main(int argc, char *argv[]) {
 	}
 	if (optind < argc) {
 		log_error("Unexpected argument(s), use -h for help\n");
+		return EXIT_FAILURE;
+	}
+	if (!ancestors) {
+		log_error("No action specified.\n");
 		return EXIT_FAILURE;
 	}
 

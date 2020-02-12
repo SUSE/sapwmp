@@ -6,7 +6,15 @@ version tracking and reproducible deployment as RPM package.
 ## How to use this
 
   * Install/remove RPM `sapwmp-profile`.
-  * Update SAP profiles (TODO add more info)
+  * Update respective SAP profiles by inserting call to the cgroup capture
+    program into the start sequence:
+
+```
+...
+Execute_20 = local /usr/sbin/sapwmp-capture -a
+# all programs spawned below will be put in dedicated cgroup
+...
+```
 
 ## Making updates
 
@@ -15,6 +23,5 @@ version tracking and reproducible deployment as RPM package.
 
 ## TODO
 
-  * RPM: allowed group
+  * RPM: extensible (group) permissions 
 
-  * doc
