@@ -1,5 +1,5 @@
 #
-# spec file for package sapwmp-profile
+# spec file for package sapwmp
 #
 # Copyright (c) 2020 SUSE LINUX GmbH, Nuernberg, Germany.
 #
@@ -17,7 +17,7 @@
 
 %define group_sapsys sapsys
 
-Name: sapwmp-profile
+Name: sapwmp
 Summary: Configuration and utilities for collecting SAP processes under control group
 License: GPL-2.0
 Version: 0.1
