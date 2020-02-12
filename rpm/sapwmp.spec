@@ -23,7 +23,7 @@ License: GPL-2.0
 Version: 0.1
 Release: 0
 Group: Productivity/Databases/Servers
-URL: http://www.suse.com
+URL: https://gitlab.suse.de/mkoutny/wmp-repo/tree/profile-rpm
 
 Source0: %{name}-%{version}.tar.xz
 Source1: sapwmp.conf
