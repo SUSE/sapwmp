@@ -15,7 +15,6 @@ version tracking and reproducible deployment as RPM package.
 
 ## TODO
 
-  * RPM: changelog generation
   * RPM: add manpage
   * RPM: allowed group
 
