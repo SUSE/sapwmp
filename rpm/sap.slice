@@ -1,3 +1,7 @@
+[Unit]
+Description=WMP slice
+Documentation=Resource controls are applied primarily to this slice.
+
 [Slice]
 # The value has to to be discussed yet!
 MemoryLow=90%
