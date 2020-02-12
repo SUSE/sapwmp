@@ -35,6 +35,7 @@ BuildRequires: autoconf
 BuildRequires: automake
 BuildRequires: systemd-rpm-macros
 BuildRequires: systemd-devel
+Requires(pre): permissions
 Requires(post): %fillup_prereq
 %{?systemd_requires}
 
@@ -65,15 +66,19 @@ install -D -m 644 %{SOURCE3} %{buildroot}%{_unitdir}/sap.slice
 %config %{_sysconfdir}/sapwmp.conf
 %doc
 
+%verifyscript
+%verify_permissions -e %{_sbindir}/sapwmp-capture
+
 %pre
 getent group %{group_sapsys} >/dev/null || echo "Warning: %{group_sapsys} group not found"
 %service_add_pre sap.slice
 
 %post
+%set_permissions %{_sbindir}/sapwmp-capture
+%service_add_post sap.slice
 if grep -q " cgroup .*memory" /proc/mounts ; then
 	echo "Warning: Found memory controller on v1 hierarchy. Make sure unified hierarchy only is used."
 fi
-%service_add_post sap.slice
 
 %preun
 %service_del_preun sap.slice
