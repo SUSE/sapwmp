@@ -23,7 +23,6 @@ License: GPL-2.0
 Version: 0.1
 Release: 0
 Group: Productivity/Databases/Servers
-Vendor: SUSE GmbH
 URL: http://www.suse.com
 
 Source0: %{name}-%{version}.tar.xz
