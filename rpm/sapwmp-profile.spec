@@ -27,7 +27,7 @@ Vendor: SUSE GmbH
 URL: http://www.suse.com
 
 Source0: %{name}-%{version}.tar.xz
-Source1: sysconfig.sapwmp
+Source1: sapwmp.conf
 Source2: service-wmp.conf
 Source3: sap.slice
 
@@ -51,7 +51,7 @@ Configuration and utilities for collecting SAP processes under control group to 
 
 %install
 %make_install
-install -D -m 644 %{SOURCE1} %{buildroot}/%{_fillupdir}/sysconfig.sapwmp
+install -D -m 644 %{SOURCE1} %{buildroot}/%{_sysconfdir}/sapwmp.conf
 install -D -m 644 %{SOURCE2} %{buildroot}%{_unitdir}/sapinit.service.d/10-wmp.conf
 install -D -m 644 %{SOURCE3} %{buildroot}%{_unitdir}/sap.slice
 
@@ -62,14 +62,13 @@ install -D -m 644 %{SOURCE3} %{buildroot}%{_unitdir}/sap.slice
 %dir %{_unitdir}/sapinit.service.d
 %{_unitdir}/sapinit.service.d/10-wmp.conf
 %{_unitdir}/sap.slice
-%{_fillupdir}/sysconfig.sapwmp
+%config %{_sysconfdir}/sapwmp.conf
 %doc
 
 %pre
 getent group %{group_sapsys} >/dev/null || echo "Warning: %{group_sapsys} group not found"
 
 %post
-%fillup_only -n sapwmp
 if grep -q " cgroup .*memory" /proc/mounts ; then
 	echo "Warning: Found memory controller on v1 hierarchy. Make sure unified hierarchy only is used."
 fi

@@ -13,7 +13,7 @@
 
 #define CGROUP_LIMIT_MAX	((uint64_t) -1)
 #define MAX_PIDS		16
-#define CONF_FILE		"/etc/sysconfig/sapwmp"
+#define CONF_FILE		"/etc/sapwmp.conf"
 #define TASK_COMM_LEN		18	/* +2 for parentheses */
 #define UNIT_NAME_LEN		128
 
