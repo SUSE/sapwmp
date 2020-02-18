@@ -190,7 +190,7 @@ int collect_pids(pid_t **rpids) {
 		pid = ppid;
 	}
 	if (n_pids == MAX_PIDS && pid > 1)
-		log_info("Incomplete forking hierarchy search after %i PIDs found\n", MAX_PIDS);
+		log_info("Some ancestor processes may be uncaptured, reached maximum of %i PIDs found\n", MAX_PIDS);
 
 	*rpids = pids;
 	return n_pids;
@@ -260,7 +260,7 @@ int main(int argc, char *argv[]) {
 
 	r = config_load(&config, CONF_FILE);
 	if (r < 0)
-		exit_log(EXIT_FAILURE, r, "Failed loading config");
+		exit_log(EXIT_FAILURE, r, "Failed loading config from '%s'", CONF_FILE);
 
 	n_pids = collect_pids(&pids);
 	if (n_pids < 0)
