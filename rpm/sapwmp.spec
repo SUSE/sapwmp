@@ -1,7 +1,7 @@
 #
 # spec file for package sapwmp
 #
-# Copyright (c) 2020 SUSE LINUX GmbH, Nuernberg, Germany.
+# Copyright (c) 2020 SUSE LLC
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -12,28 +12,29 @@
 # license that conforms to the Open Source Definition (Version 1.9)
 # published by the Open Source Initiative.
 
-# Please submit bugfixes or comments via http://bugs.opensuse.org/
+# Please submit bugfixes or comments via https://bugs.opensuse.org/
 #
+
 
 %define group_sapsys sapsys
 
-Name: sapwmp
-Summary: Configuration and utilities for collecting SAP processes under control group
-License: GPL-2.0
-Version: 0.1
-Release: 0
-Group: Productivity/Databases/Servers
-URL: https://gitlab.suse.de/mkoutny/wmp-repo/tree/profile-rpm
+Name:           sapwmp
+Summary:        Configuration and utilities for collecting SAP processes under control group
+License:        GPL-2.0-only
+Group:          Productivity/Databases/Servers
+Version:        0.1
+Release:        0
+URL:            https://gitlab.suse.de/mkoutny/wmp-repo/tree/profile-rpm
 
-Source0: %{name}-%{version}.tar.xz
-Source1: sapwmp.conf
-Source2: service-wmp.conf
-Source3: sap.slice
+Source0:        %{name}-%{version}.tar.xz
+Source1:        sapwmp.conf
+Source2:        service-wmp.conf
+Source3:        sap.slice
 
-BuildRequires: autoconf
-BuildRequires: automake
-BuildRequires: systemd-rpm-macros
-BuildRequires: systemd-devel
+BuildRequires:  autoconf
+BuildRequires:  automake
+BuildRequires:  systemd-devel
+BuildRequires:  systemd-rpm-macros
 Requires(pre): permissions
 Requires(post): %fillup_prereq
 %{?systemd_requires}
@@ -54,7 +55,6 @@ Configuration and utilities for collecting SAP processes under control group to 
 install -D -m 644 %{SOURCE1} %{buildroot}/%{_sysconfdir}/sapwmp.conf
 install -D -m 644 %{SOURCE2} %{buildroot}%{_unitdir}/sapinit.service.d/10-wmp.conf
 install -D -m 644 %{SOURCE3} %{buildroot}%{_unitdir}/sap.slice
-
 
 %files
 %defattr(-,root,root)
