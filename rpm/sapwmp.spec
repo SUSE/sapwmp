@@ -58,7 +58,8 @@ install -D -m 644 %{SOURCE3} %{buildroot}%{_unitdir}/sap.slice
 
 %files
 %defattr(-,root,root)
-%attr(4750,root,%{group_sapsys}) %{_sbindir}/sapwmp-capture
+%dir %{_libexecdir}/sapwmp
+%attr(4750,root,%{group_sapsys}) %{_libexecdir}/sapwmp/sapwmp-capture
 %dir %{_unitdir}/sapinit.service.d
 %{_unitdir}/sapinit.service.d/10-wmp.conf
 %{_unitdir}/sap.slice
@@ -66,14 +67,14 @@ install -D -m 644 %{SOURCE3} %{buildroot}%{_unitdir}/sap.slice
 %doc
 
 %verifyscript
-%verify_permissions -e %{_sbindir}/sapwmp-capture
+%verify_permissions -e %{_libexecdir}/sapwmp/sapwmp-capture
 
 %pre
 getent group %{group_sapsys} >/dev/null || echo "Warning: %{group_sapsys} group not found"
 %service_add_pre sap.slice
 
 %post
-%set_permissions %{_sbindir}/sapwmp-capture
+%set_permissions %{_libexecdir}/sapwmp/sapwmp-capture
 %service_add_post sap.slice
 if grep -q " cgroup .*memory" /proc/mounts ; then
 	echo "Warning: Found memory controller on v1 hierarchy. Make sure unified hierarchy only is used."

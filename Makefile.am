@@ -1,4 +1,6 @@
-sbin_PROGRAMS = sapwmp-capture
+sapwmplibexecdir=$(libexecdir)/sapwmp
+
+sapwmplibexec_PROGRAMS = sapwmp-capture
 sapwmp_capture_CFLAGS = \
 	$(LIBSYSTEMD_CGLAGS)
 sapwmp_capture_LDADD = \

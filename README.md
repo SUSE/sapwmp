@@ -11,7 +11,7 @@ version tracking and reproducible deployment as RPM package.
 
 ```
 ...
-Execute_20 = local /usr/sbin/sapwmp-capture -a
+Execute_20 = local /usr/lib/sapwmp/sapwmp-capture -a
 # all programs spawned below will be put in dedicated cgroup
 ...
 ```
