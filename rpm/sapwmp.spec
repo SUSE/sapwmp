@@ -35,7 +35,7 @@ BuildRequires:  autoconf
 BuildRequires:  automake
 BuildRequires:  systemd-devel
 BuildRequires:  systemd-rpm-macros
-Requires(pre): permissions
+Requires(post): permissions
 Requires(post): %fillup_prereq
 %{?systemd_requires}
 
@@ -56,16 +56,6 @@ install -D -m 644 %{SOURCE1} %{buildroot}/%{_sysconfdir}/sapwmp.conf
 install -D -m 644 %{SOURCE2} %{buildroot}%{_unitdir}/sapinit.service.d/10-wmp.conf
 install -D -m 644 %{SOURCE3} %{buildroot}%{_unitdir}/sap.slice
 
-%files
-%defattr(-,root,root)
-%dir %{_libexecdir}/sapwmp
-%attr(4750,root,%{group_sapsys}) %{_libexecdir}/sapwmp/sapwmp-capture
-%dir %{_unitdir}/sapinit.service.d
-%{_unitdir}/sapinit.service.d/10-wmp.conf
-%{_unitdir}/sap.slice
-%config %{_sysconfdir}/sapwmp.conf
-%doc
-
 %verifyscript
 %verify_permissions -e %{_libexecdir}/sapwmp/sapwmp-capture
 
@@ -85,5 +75,14 @@ fi
 
 %postun
 %service_del_postun sap.slice
+
+%files
+%defattr(-,root,root)
+%dir %{_libexecdir}/sapwmp
+%verify(not user group mode) %attr(4750,root,%{group_sapsys}) %{_libexecdir}/sapwmp/sapwmp-capture
+%dir %{_unitdir}/sapinit.service.d
+%{_unitdir}/sapinit.service.d/10-wmp.conf
+%{_unitdir}/sap.slice
+%config %{_sysconfdir}/sapwmp.conf
 
 %changelog
