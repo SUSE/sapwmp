@@ -17,26 +17,23 @@
 
 
 %define group_sapsys sapsys
-
 Name:           sapwmp
+Version:        0.1
+Release:        0
 Summary:        Configuration and utilities for collecting SAP processes under control group
 License:        GPL-2.0-only
 Group:          Productivity/Databases/Servers
-Version:        0.1
-Release:        0
 URL:            https://gitlab.suse.de/mkoutny/wmp-repo/tree/profile-rpm
-
 Source0:        %{name}-%{version}.tar.xz
 Source1:        sapwmp.conf
 Source2:        service-wmp.conf
 Source3:        sap.slice
-
 BuildRequires:  autoconf
 BuildRequires:  automake
 BuildRequires:  systemd-devel
 BuildRequires:  systemd-rpm-macros
-Requires(post): permissions
 Requires(post): %fillup_prereq
+Requires(post): permissions
 %{?systemd_requires}
 
 %description
@@ -77,7 +74,6 @@ fi
 %service_del_postun sap.slice
 
 %files
-%defattr(-,root,root)
 %dir %{_libexecdir}/sapwmp
 %verify(not user group mode) %attr(4750,root,%{group_sapsys}) %{_libexecdir}/sapwmp/sapwmp-capture
 %dir %{_unitdir}/sapinit.service.d
