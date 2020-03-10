@@ -26,8 +26,7 @@ Group:          Productivity/Databases/Servers
 URL:            https://gitlab.suse.de/mkoutny/wmp-repo/tree/profile-rpm
 Source0:        %{name}-%{version}.tar.xz
 Source1:        sapwmp.conf
-Source2:        service-wmp.conf
-Source3:        sap.slice
+Source2:        sap.slice
 BuildRequires:  autoconf
 BuildRequires:  automake
 BuildRequires:  systemd-devel
@@ -50,8 +49,7 @@ Configuration and utilities for collecting SAP processes under control group to 
 %install
 %make_install
 install -D -m 644 %{SOURCE1} %{buildroot}/%{_sysconfdir}/sapwmp.conf
-install -D -m 644 %{SOURCE2} %{buildroot}%{_unitdir}/sapinit.service.d/10-wmp.conf
-install -D -m 644 %{SOURCE3} %{buildroot}%{_unitdir}/sap.slice
+install -D -m 644 %{SOURCE2} %{buildroot}%{_unitdir}/sap.slice
 
 %verifyscript
 %verify_permissions -e %{_libexecdir}/sapwmp/sapwmp-capture
@@ -76,8 +74,6 @@ fi
 %files
 %dir %{_libexecdir}/sapwmp
 %verify(not user group mode) %attr(4750,root,%{group_sapsys}) %{_libexecdir}/sapwmp/sapwmp-capture
-%dir %{_unitdir}/sapinit.service.d
-%{_unitdir}/sapinit.service.d/10-wmp.conf
 %{_unitdir}/sap.slice
 %config %{_sysconfdir}/sapwmp.conf
 
