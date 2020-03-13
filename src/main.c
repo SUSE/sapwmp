@@ -120,7 +120,7 @@ int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
 
         r = sd_bus_call(bus, m, 0, &bus_error, NULL);
 	if (r < 0) {
-		log_info("DBus call error: %s\n", strerror(sd_bus_error_get_errno(&bus_error)));
+		log_info("DBus call error: %s", strerror(sd_bus_error_get_errno(&bus_error)));
 	}
 	/* ignore reply, i.e. don't wait for the job to finish */
 	return r;
@@ -190,7 +190,7 @@ int collect_pids(pid_t **rpids) {
 		pid = ppid;
 	}
 	if (n_pids == MAX_PIDS && pid > 1)
-		log_info("Some ancestor processes may be uncaptured, reached maximum of %i PIDs found\n", MAX_PIDS);
+		log_info("Some ancestor processes may be uncaptured, reached maximum of %i PIDs found", MAX_PIDS);
 
 	*rpids = pids;
 	return n_pids;
@@ -219,9 +219,10 @@ static int make_scope_name(char *buf) {
 
 static void print_help(const char *name) {
 	fprintf(stderr, "Usage: %s [-h] -a\n", name);
+	fprintf(stderr, "       Similar to systemd-run --scope, logs into syslog unless stderr is a TTY\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "       -h	Show this help\n");
 	fprintf(stderr, "       -a	Put chosen ancestor processes under WMP scope\n");
-	fprintf(stderr, "       	(similar to systemd-run --scope)\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -231,6 +232,8 @@ int main(int argc, char *argv[]) {
 	int opt, ancestors = 0;
 	int n_pids;
 	int r;
+
+	log_init();
 
 	while ((opt = getopt(argc, argv, "ah")) != -1) {
 		switch (opt) {
@@ -271,9 +274,8 @@ int main(int argc, char *argv[]) {
 
 	log_info("Found PIDs: ");
 	for (int i = 0; i < n_pids; i++) {
-		log_info("%i, ", pids[i]);
+		log_info("\t%i", pids[i]);
 	}
-	log_info("\n");
 
 	r = sd_bus_open_system(&bus);
 	if (r < 0) 
