@@ -241,36 +241,33 @@ int main(int argc, char *argv[]) {
 			print_help(argv[0]);
 			return EXIT_SUCCESS;
 		default:
-			log_error("Unknown option(s), use -h for help\n");
-			return EXIT_FAILURE;
+			exit_error(EXIT_FAILURE, 0, "Unknown option(s), use -h for help");
 		}
 	}
 	if (optind < argc) {
-		log_error("Unexpected argument(s), use -h for help\n");
-		return EXIT_FAILURE;
+		exit_error(EXIT_FAILURE, 0, "Unexpected argument(s), use -h for help");
 	}
 	if (!ancestors) {
-		log_error("No action specified.\n");
-		return EXIT_FAILURE;
+		exit_error(EXIT_FAILURE, 0, "No action specified.");
 	}
 
 	r = config_init(&config);
 	if (r < 0)
-		exit_log(EXIT_FAILURE, r, "Failed config init");
+		exit_error(EXIT_FAILURE, r, "Failed config init");
 
 	r = config_load(&config, CONF_FILE);
 	if (r < 0)
-		exit_log(EXIT_FAILURE, r, "Failed loading config from '%s'", CONF_FILE);
+		exit_error(EXIT_FAILURE, r, "Failed loading config from '%s'", CONF_FILE);
 
 	n_pids = collect_pids(&pids);
 	if (n_pids < 0)
-		exit_log(EXIT_FAILURE, n_pids, "Failed collecting PIDs");
+		exit_error(EXIT_FAILURE, n_pids, "Failed collecting PIDs");
 	else if (n_pids == 0)
 		return 0;
 
 	r = make_scope_name(unit_name);
 	if (r < 0)
-		exit_log(EXIT_FAILURE, r, "Failed creating scope name");
+		exit_error(EXIT_FAILURE, r, "Failed creating scope name");
 
 	log_info("Found PIDs: ");
 	for (int i = 0; i < n_pids; i++) {
@@ -280,11 +277,11 @@ int main(int argc, char *argv[]) {
 
 	r = sd_bus_open_system(&bus);
 	if (r < 0) 
-		exit_log(EXIT_FAILURE, r, "Failed opening DBus");
+		exit_error(EXIT_FAILURE, r, "Failed opening DBus");
 
 	r = migrate(bus, unit_name, config.slice, n_pids, pids);
 	if (r < 0)
-		exit_log(EXIT_FAILURE, r, "Failed capture into %s/%s", config.slice, unit_name);
+		exit_error(EXIT_FAILURE, r, "Failed capture into %s/%s", config.slice, unit_name);
 
 	log_info("Successful capture into %s/%s", config.slice, unit_name);
 

@@ -19,15 +19,19 @@ static inline void _log(int level /*unused*/, const char *fmt, ...) {
 	va_end(ap);
 }
 
-static inline void exit_log(int status, int e, const char *fmt, ...) __attribute__ ((noreturn));
-static inline void exit_log(int status, int e, const char *fmt, ...) {
+static inline void exit_error(int status, int e, const char *fmt, ...) __attribute__ ((noreturn));
+static inline void exit_error(int status, int e, const char *fmt, ...) {
 	va_list ap;
 
 	va_start(ap, fmt);
 	_logv(LOG_ERR, fmt, ap);
 	va_end(ap);
 
-	log_error(": %s\n", strerror(-e));
+	if (e)
+		_log(LOG_ERR, ": %s\n", strerror(-e));
+	else
+		_log(LOG_ERR, "\n");
+
 	exit(status);
 }
 
