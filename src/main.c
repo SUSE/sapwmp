@@ -251,7 +251,7 @@ int main(int argc, char *argv[]) {
 			verbose = 1;
 			break;
 		default:
-			exit_error(EXIT_FAILURE, 0, "Unknown option(s), use -h for help");
+			log_error("Unknown option(s), use -h for help");
 		}
 	}
 	if (optind < argc) {
