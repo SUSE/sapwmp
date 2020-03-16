@@ -19,7 +19,8 @@
 
 #define _cleanup_(x) __attribute__((cleanup(x)))
 
-struct config config;
+static int verbose;
+static struct config config;
 
 static inline void freep(void *p) {
 	free(*(void **)p);
@@ -180,6 +181,8 @@ int collect_pids(pid_t **rpids) {
 	while (pid > 1 && n_pids < MAX_PIDS) {
 		if (read_stat(pid, &ppid, comm))
 			goto err;
+		if (verbose)
+			log_debug("%10i: %s", pid, comm);
 
 		for (char **p = config.parent_commands.list; *p; p++) {
 			if(!strcmp(comm, *p)) {
@@ -218,10 +221,11 @@ static int make_scope_name(char *buf) {
 }
 
 static void print_help(const char *name) {
-	fprintf(stderr, "Usage: %s [-h] -a\n", name);
+	fprintf(stderr, "Usage: %s [-hv] -a\n", name);
 	fprintf(stderr, "       Similar to systemd-run --scope, logs into syslog unless stderr is a TTY\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "       -h	Show this help\n");
+	fprintf(stderr, "       -v	Verbose logging (for debugging)\n");
 	fprintf(stderr, "       -a	Put chosen ancestor processes under WMP scope\n");
 }
 
@@ -235,7 +239,7 @@ int main(int argc, char *argv[]) {
 
 	log_init();
 
-	while ((opt = getopt(argc, argv, "ah")) != -1) {
+	while ((opt = getopt(argc, argv, "ahv")) != -1) {
 		switch (opt) {
 		case 'a':
 			ancestors = 1;
@@ -243,6 +247,9 @@ int main(int argc, char *argv[]) {
 		case 'h':
 			print_help(argv[0]);
 			return EXIT_SUCCESS;
+		case 'v':
+			verbose = 1;
+			break;
 		default:
 			exit_error(EXIT_FAILURE, 0, "Unknown option(s), use -h for help");
 		}
