@@ -266,7 +266,7 @@ int main(int argc, char *argv[]) {
 	if (n_pids < 0)
 		exit_error(EXIT_FAILURE, n_pids, "Failed collecting PIDs");
 	else if (n_pids == 0)
-		return 0;
+		exit_error(EXIT_SUCCESS, 0, "Empty capture");
 
 	r = make_scope_name(unit_name);
 	if (r < 0)
@@ -288,5 +288,5 @@ int main(int argc, char *argv[]) {
 	log_info("Successful capture into %s/%s", config.slice, unit_name);
 
 	/* skip config_deinit */
-	return 0;
+	return EXIT_SUCCESS;
 }
