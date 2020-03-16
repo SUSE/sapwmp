@@ -281,7 +281,7 @@ int main(int argc, char *argv[]) {
 
 	log_info("Found PIDs: ");
 	for (int i = 0; i < n_pids; i++) {
-		log_info("\t%i", pids[i]);
+		log_info("%10i", pids[i]);
 	}
 
 	r = sd_bus_open_system(&bus);
