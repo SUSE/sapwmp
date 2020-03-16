@@ -167,7 +167,7 @@ final:
 int collect_pids(pid_t **rpids) {
 	int n_pids = 0;
 	pid_t pid, ppid;
-	char comm[TASK_COMM_LEN + 1]; 
+	char comm[TASK_COMM_LEN + 1];
 	pid_t *pids;
 
 	assert(rpids);
@@ -278,7 +278,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	r = sd_bus_open_system(&bus);
-	if (r < 0) 
+	if (r < 0)
 		exit_error(EXIT_FAILURE, r, "Failed opening DBus");
 
 	r = migrate(bus, unit_name, config.slice, n_pids, pids);
