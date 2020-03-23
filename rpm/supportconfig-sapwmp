@@ -1,0 +1,103 @@
+#!/bin/bash
+set -u
+
+function display_file() {
+    echo -e "\n#==[ Configuration File ]===========================#"
+    echo -e "# ${1}"
+    cat "${1}"
+}
+
+
+function display_rpm() {
+    echo -e "\n#==[ Command ]======================================#"
+    echo -e "# rpm -q ${1} "
+    rpm -q "${1}"
+}
+
+function display_cmd() {
+    echo -e "\n#==[ Command ]======================================#"
+    echo -e "# ${@}"
+    ${@}
+}
+
+function display_cgroup() {
+    local f
+    echo -e "\n#==[ Cgroup ]=======================================#"
+    for f in memory.low memory.current memory.stat memory.events ; do
+        echo "# ${1}/${f}"
+        cat ${1}/${f}
+	echo
+    done
+}
+
+function display_log() {
+    local file	
+    echo -e "\n#==[ Log File ]=====================================#"
+    for file in ${1} ; do
+        echo -e "# ${file} - only pattern '${2}'"
+    	zgrep "${2}" < "${file}"
+    done
+}
+
+function display_instance_profiles() {
+    local p profile
+    echo -e "\n#==[ Configuration]================================#"
+
+    # Extracts profile pathes from running processes.
+    while read profile ; do 
+	[[ "${profile}" =~ /host_profile ]] && continue
+        echo "# ${profile}"
+	cat "${profile}"
+        echo 
+    done < <( 
+        while read p ; do
+            [ "${p:0:3}" = "pf=" ] || continue
+            echo "${p:3}" 
+        done < <(ps -eo cmd | tr ' ' '\n') | sort -u )
+}
+
+function display_swapped_procs() {
+    local p swapped pid name
+    echo -e "\n#==[ Configuration ]================================#"
+    echo "# /proc/[0-9]*/status - only VmSwap > 0"
+    echo -e '\n     VmSwap        PID    Name'
+    echo -e '--------------- --------- ------------------------------------------------------------'
+    for p in /proc/[0-9]*/status ; do 
+
+        # Determine size of VmSwap and continue id 0.
+        swapped=$(grep '^VmSwap:' "${p}" | expand)
+        swapped="${swapped##*:}"
+        swapped="${swapped% kB}"
+        swapped="${swapped// /}"
+        [ "${swapped}" == "" ] && continue
+        [ "${swapped}" -eq 0 ] && continue
+
+        # Get pid and name of process.
+        pid="${p#/proc/}" ; pid="${pid%/status}"
+        read name < /proc/${pid}/cmdline
+ 
+        printf '%12d kB %9d %-.64s\n' ${swapped} ${pid} $"${name}"
+    done
+}
+
+
+# ---- Main ----
+display_cmd grep cgroup /proc/mounts
+display_file /proc/cmdline
+display_file /etc/default/grub
+display_rpm sapwmp
+display_file /etc/sapwmp.conf
+display_cmd systemctl cat sap.slice
+display_cmd systemctl show -p MemoryLow sap.slice
+display_instance_profiles
+display_cmd systemd-cgls --all --no-pager
+display_cgroup /sys/fs/cgroup/sap.slice
+display_cgroup /sys/fs/cgroup/system.slice
+display_cgroup /sys/fs/cgroup/user.slice
+display_cgroup /sys/fs/cgroup/init.scope
+display_swapped_procs
+display_log '/var/log/messages*' sapwmp-capture
+
+# Bye.
+exit 0
+
