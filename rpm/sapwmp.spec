@@ -49,7 +49,7 @@ Configuration and utilities for collecting SAP processes under control group to 
 %install
 %make_install
 install -D -m 644 %{SOURCE1} %{buildroot}/%{_sysconfdir}/sapwmp.conf
-install -D -m 644 %{SOURCE2} %{buildroot}%{_unitdir}/sap.slice
+install -D -m 644 %{SOURCE2} %{buildroot}/%{_unitdir}/sap.slice
 
 %verifyscript
 %verify_permissions -e %{_libexecdir}/sapwmp/sapwmp-capture
