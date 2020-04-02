@@ -57,26 +57,16 @@ function display_instance_profiles() {
 }
 
 function display_swapped_procs() {
-    local p swapped pid name
+    local path pid comm swappss
     echo -e "\n#==[ Configuration ]================================#"
-    echo "# /proc/[0-9]*/status - only VmSwap > 0"
-    echo -e '\n     VmSwap        PID    Name'
-    echo -e '--------------- --------- ------------------------------------------------------------'
-    for p in /proc/[0-9]*/status ; do 
-
-        # Determine size of VmSwap and continue id 0.
-        swapped=$(grep '^VmSwap:' "${p}" | expand)
-        swapped="${swapped##*:}"
-        swapped="${swapped% kB}"
-        swapped="${swapped// /}"
-        [ "${swapped}" == "" ] && continue
-        [ "${swapped}" -eq 0 ] && continue
-
-        # Get pid and name of process.
-        pid="${p#/proc/}" ; pid="${pid%/status}"
-        read name < /proc/${pid}/cmdline
- 
-        printf '%12d kB %9d %-.64s\n' ${swapped} ${pid} $"${name}"
+    echo "# /proc/[0-9]*/smaps - only SwapPSS > 0"
+    printf "      SwapPss  Process\n-------------  ---------------------------\n"
+    for path in /proc/[1-9]* ; do
+        pid="${path##*/}"
+        read comm < /proc/${pid}/comm
+        swappss=$(awk 'BEGIN { swappss = 0 } /^SwapPss:/ { swappss += $2 } END {print swappss}' "${path}/smaps")
+        [ ${swappss} -eq 0 ] && continue
+        printf "%10d kB  %s[%d]\n" ${swappss} "${comm}" ${pid}
     done
 }
 
