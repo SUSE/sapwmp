@@ -23,7 +23,7 @@ Release:        0
 Summary:        Configuration and utilities for collecting SAP processes under control group
 License:        GPL-2.0-only
 Group:          Productivity/Databases/Servers
-URL:            https://gitlab.suse.de/mkoutny/wmp-repo/tree/profile-rpm
+URL:            https://gitlab.suse.de/mkoutny/wmp-repo/
 Source0:        %{name}-%{version}.tar.xz
 Source1:        sapwmp.conf
 Source2:        sap.slice
