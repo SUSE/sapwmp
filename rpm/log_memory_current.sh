@@ -1,9 +1,8 @@
 #!/bin/bash
 
 # Collets memory.current of all cgroups directly beneath /sys/fs/cgroup 
-# in a log file.
+# in syslog
 #
-# v0.1
 
 set -u
 

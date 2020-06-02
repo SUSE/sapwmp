@@ -28,12 +28,16 @@ Source0:        %{name}-%{version}.tar.xz
 Source1:        sapwmp.conf
 Source2:        sap.slice
 Source3:        supportconfig-sapwmp
+Source4:        log_memory_current.sh
+Source5:        log_memory_current.service
+Source6:        log_memory_current.timer
 BuildRequires:  autoconf
 BuildRequires:  automake
 BuildRequires:  systemd-devel
 BuildRequires:  systemd-rpm-macros
 Requires(post): %fillup_prereq
 Requires(post): permissions
+Requires:       util-linux-systemd
 %{?systemd_requires}
 
 %description
@@ -52,31 +56,37 @@ Configuration and utilities for collecting SAP processes under control group to 
 install -D -m 644 %{SOURCE1} %{buildroot}/%{_sysconfdir}/sapwmp.conf
 install -D -m 644 %{SOURCE2} %{buildroot}/%{_unitdir}/sap.slice
 install -D -m 755 %{SOURCE3} %{buildroot}/usr/lib/supportconfig/plugins/sapwmp
+install -D -m 744 %{SOURCE4} %{buildroot}/%{_libexecdir}/sapwmp/log_memory_current
+install -D -m 644 %{SOURCE5} %{buildroot}/%{_unitdir}/log_memory_current.service
+install -D -m 644 %{SOURCE6} %{buildroot}/%{_unitdir}/log_memory_current.timer
 
 %verifyscript
 %verify_permissions -e %{_libexecdir}/sapwmp/sapwmp-capture
 
 %pre
 getent group %{group_sapsys} >/dev/null || echo "Warning: %{group_sapsys} group not found"
-%service_add_pre sap.slice
+%service_add_pre sap.slice log_memory_current.service log_memory_current.timer
 
 %post
 %set_permissions %{_libexecdir}/sapwmp/sapwmp-capture
-%service_add_post sap.slice
+%service_add_post sap.slice log_memory_current.service log_memory_current.timer
 if grep -q " cgroup .*memory" /proc/mounts ; then
 	echo "Warning: Found memory controller on v1 hierarchy. Make sure unified hierarchy only is used."
 fi
 
 %preun
-%service_del_preun sap.slice
+%service_del_preun sap.slice log_memory_current.service log_memory_current.timer
 
 %postun
-%service_del_postun sap.slice
+%service_del_postun sap.slice log_memory_current.service log_memory_current.timer
 
 %files
 %dir %{_libexecdir}/sapwmp
 %verify(not user group mode) %attr(4750,root,%{group_sapsys}) %{_libexecdir}/sapwmp/sapwmp-capture
+%{_libexecdir}/sapwmp/log_memory_current
 %{_unitdir}/sap.slice
+%{_unitdir}/log_memory_current.service
+%{_unitdir}/log_memory_current.timer
 %config %{_sysconfdir}/sapwmp.conf
 %dir /usr/lib/supportconfig
 %dir /usr/lib/supportconfig/plugins

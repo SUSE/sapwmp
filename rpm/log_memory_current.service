@@ -1,6 +1,6 @@
 [Unit]
-Description=Logs memory.current of all cgroups directly beneath /sys/fs/cgroup to syslog.
+Description=Log memory.current of cgroups directly beneath /sys/fs/cgroup to syslog.
  
 [Service]
 Type=oneshot
-ExecStart=/usr/sbin/log_current_memory
+ExecStart=/usr/lib/sapwmp/log_memory_current
