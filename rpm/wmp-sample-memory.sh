@@ -6,7 +6,7 @@
 
 set -u
 
-tag="collect_current_memory"
+tag="wmp_memory_current"
 
 # Exit if cgroup2 is not available or the memeory controller (cgroup2) is missing. 
 if [ ! -e /sys/fs/cgroup/cgroup.controllers ] ; then

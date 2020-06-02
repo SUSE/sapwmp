@@ -84,8 +84,8 @@ display_rpm sapwmp
 display_file /etc/sapwmp.conf
 display_cmd systemctl cat sap.slice
 display_cmd systemctl show -p MemoryLow sap.slice
-display_cmd systemctl status log_memory_current.timer
-display_cmd systemctl cat log_memory_current.timer
+display_cmd systemctl status wmp-sample-memory.timer
+display_cmd systemctl cat wmp-sample-memory.timer
 display_instance_profiles
 display_cmd systemd-cgls --all --no-pager
 display_cgroup /sys/fs/cgroup/sap.slice
@@ -94,7 +94,7 @@ display_cgroup /sys/fs/cgroup/user.slice
 display_cgroup /sys/fs/cgroup/init.scope
 display_swapped_procs
 display_log '/var/log/messages*' sapwmp-capture
-display_log '/var/log/messages' log_current_memory 10
+display_log '/var/log/messages' wmp_memory_current 10
 
 # Bye.
 exit 0

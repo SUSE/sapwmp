@@ -3,4 +3,4 @@ Description=Log memory.current of cgroups directly beneath /sys/fs/cgroup to sys
  
 [Service]
 Type=oneshot
-ExecStart=/usr/lib/sapwmp/log_memory_current
+ExecStart=/usr/lib/sapwmp/wmp-sample-memory
