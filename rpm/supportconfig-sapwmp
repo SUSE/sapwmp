@@ -26,16 +26,21 @@ function display_cgroup() {
     for f in memory.low memory.current memory.stat memory.events ; do
         echo "# ${1}/${f}"
         cat ${1}/${f}
-	echo
+        echo
     done
 }
 
 function display_log() {
-    local file	
+    local file
     echo -e "\n#==[ Log File ]=====================================#"
     for file in ${1} ; do
-        echo -e "# ${file} - only pattern '${2}'"
-    	zgrep "${2}" < "${file}"
+        if [ -n "${3-}" ] ; then
+            echo -e "# ${file} - only pattern '${2}' (latest ${3} hits)"
+            zgrep "${2}" "${file}" | tail -n "${3}"
+        else
+            echo -e "# ${file} - only pattern '${2}'"
+            zgrep "${2}" "${file}"
+        fi
     done
 }
 
@@ -44,15 +49,15 @@ function display_instance_profiles() {
     echo -e "\n#==[ Configuration]================================#"
 
     # Extracts profile pathes from running processes.
-    while read profile ; do 
-	[[ "${profile}" =~ /host_profile ]] && continue
+    while read profile ; do
+        [[ "${profile}" =~ /host_profile ]] && continue
         echo "# ${profile}"
-	cat "${profile}"
-        echo 
-    done < <( 
+        cat "${profile}"
+        echo
+    done < <(
         while read p ; do
             [ "${p:0:3}" = "pf=" ] || continue
-            echo "${p:3}" 
+            echo "${p:3}"
         done < <(ps -eo cmd | tr ' ' '\n') | sort -u )
 }
 
@@ -79,6 +84,8 @@ display_rpm sapwmp
 display_file /etc/sapwmp.conf
 display_cmd systemctl cat sap.slice
 display_cmd systemctl show -p MemoryLow sap.slice
+display_cmd systemctl status log_memory_current.timer
+display_cmd systemctl cat log_memory_current.timer
 display_instance_profiles
 display_cmd systemd-cgls --all --no-pager
 display_cgroup /sys/fs/cgroup/sap.slice
@@ -87,6 +94,7 @@ display_cgroup /sys/fs/cgroup/user.slice
 display_cgroup /sys/fs/cgroup/init.scope
 display_swapped_procs
 display_log '/var/log/messages*' sapwmp-capture
+display_log '/var/log/messages' log_current_memory 10
 
 # Bye.
 exit 0
