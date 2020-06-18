@@ -64,7 +64,16 @@ install -D -m 644 %{SOURCE6} %{buildroot}/%{_unitdir}/wmp-sample-memory.timer
 %verify_permissions -e %{_libexecdir}/sapwmp/sapwmp-capture
 
 %pre
-getent group %{group_sapsys} >/dev/null || echo "Warning: %{group_sapsys} group not found"
+getent group %{group_sapsys} >/dev/null || cat <<EOD
+The %{group_sapsys} group was not found! Most probably because no SAP software
+is installed on your system. The ownership of some files are not sufficient
+now.
+To fix this, run the following commands after installing the SAP
+software, which should create the group %{group_sapsys}:
+
+chgrp %{group_sapsys} %{_libexecdir}/sapwmp/sapwmp-capture
+chmod +s %{_libexecdir}/sapwmp/sapwmp-capture
+EOD
 %service_add_pre sap.slice wmp-sample-memory.service wmp-sample-memory.timer
 
 %post
