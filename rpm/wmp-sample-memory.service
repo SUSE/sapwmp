@@ -1,5 +1,7 @@
 [Unit]
 Description=Log memory.current of cgroups directly beneath /sys/fs/cgroup to syslog.
+Wants=sap.slice
+After=sap.slice
  
 [Service]
 Type=oneshot
