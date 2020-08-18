@@ -2,3 +2,5 @@
 [Unit]
 Description=WMP slice
 
+[Slice]
+MemoryAccounting=yes
