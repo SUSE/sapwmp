@@ -67,11 +67,13 @@ function display_swapped_procs() {
     echo "# /proc/[0-9]*/smaps - only SwapPSS > 0"
     printf "      SwapPss  Process\n-------------  ---------------------------\n"
     for path in /proc/[1-9]* ; do
+        # smaps take time, tolerate gone PIDs
+        [ -d ${path} ] || continue
         pid="${path##*/}"
         read comm < /proc/${pid}/comm
         swappss=$(awk 'BEGIN { swappss = 0 } /^SwapPss:/ { swappss += $2 } END {print swappss}' "${path}/smaps")
-        [ ${swappss} -eq 0 ] && continue
-        printf "%10d kB  %s[%d]\n" ${swappss} "${comm}" ${pid}
+        [ "0${swappss}" -eq 0 ] && continue
+        printf "%10d kB  %s[%d]\n" "${swappss}" "${comm}" ${pid}
     done
 }
 
