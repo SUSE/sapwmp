@@ -3,6 +3,8 @@ Description=WMP periodic log of memory consumption
 
 [Timer]
 OnCalendar=*:0/10
+RandomizedDelaySec=180
+AccuracySec=60
 
 [Install]
 WantedBy=timers.target
