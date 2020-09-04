@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# Collets memory.current of all cgroups directly beneath /sys/fs/cgroup 
-# in syslog
+#  Collects memory data of all cgroups directly beneath /sys/fs/cgroup in syslog.
 #
 
 set -u
@@ -18,16 +17,24 @@ if [[ ! $(< /sys/fs/cgroup/cgroup.subtree_control) =~ memory ]] ; then
 	exit 1
 fi
 
-# Collect all memory.current of first level.
+# Walk through cgroups directly beneath root.
 line=""
-while read -r file ; do
-	dir="${file%/memory.current}"
-	dir="${dir#/sys/fs/cgroup/}"
-	line="${line} ${dir}="$(< "${file}")
-done < <(find /sys/fs/cgroup -maxdepth 2 -name memory.current)
+while read cgroup  ; do 
+    name="${cgroup#/sys/fs/cgroup/}"
+	line="${line}${name} :"
+	for param in memory.low memory.current memory.swap.current ; do
+	    if [ -e "${cgroup}/${param}" ] ; then
+			value=$(< "${cgroup}/${param}")
+		else
+			value="-"
+		fi
+		line="${line} ${param}=${value}"
+	done 
+	line="${line} , "
+done < <(find /sys/fs/cgroup -mindepth 1 -maxdepth 1 -type d)
 
 # Write to syslog
-logger -p user.info -t "${tag}" "${line## }"
+logger -p user.info -t "${tag}" "${line% , }"
 
 # Bye.
 exit 0
