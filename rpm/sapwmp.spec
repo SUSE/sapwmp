@@ -82,6 +82,15 @@ EOD
 
 %post
 %set_permissions %{_libexecdir}/sapwmp/sapwmp-capture
+# Historically, we used 'sap.slice', check if there is any user configuration
+# set with systemctl set-property and reassign to the current 'SAP.slice' (keep
+# runtime copy for 'sap.slice').
+# systemctl-daemon reload is implicit in the following service_add_post.
+if [ "$1" -eq "2" -a -d /etc/systemd/system.control/sap.slice.d ] ; then
+	cp -r /etc/systemd/system.control/sap.slice.d /run/systemd/system.control/sap.slice.d || :
+	mv /etc/systemd/system.control/sap.slice.d /etc/systemd/system.control/SAP.slice.d \
+	 && echo "Migrated configuration from sap.slice to SAP.slice"
+fi
 %service_add_post wmp-sample-memory.service wmp-sample-memory.timer
 if grep -q " cgroup .*memory" /proc/mounts ; then
 	echo "Warning: Found memory controller on v1 hierarchy. Make sure unified hierarchy only is used."
