@@ -78,20 +78,20 @@ software, which should create the group %{group_sapsys}:
 chgrp %{group_sapsys} %{_libexecdir}/sapwmp/sapwmp-capture
 chmod +s %{_libexecdir}/sapwmp/sapwmp-capture
 EOD
-%service_add_pre sap.slice wmp-sample-memory.service wmp-sample-memory.timer
+%service_add_pre wmp-sample-memory.service wmp-sample-memory.timer
 
 %post
 %set_permissions %{_libexecdir}/sapwmp/sapwmp-capture
-%service_add_post sap.slice wmp-sample-memory.service wmp-sample-memory.timer
+%service_add_post wmp-sample-memory.service wmp-sample-memory.timer
 if grep -q " cgroup .*memory" /proc/mounts ; then
 	echo "Warning: Found memory controller on v1 hierarchy. Make sure unified hierarchy only is used."
 fi
 
 %preun
-%service_del_preun sap.slice wmp-sample-memory.service wmp-sample-memory.timer
+%service_del_preun wmp-sample-memory.service wmp-sample-memory.timer
 
 %postun
-%service_del_postun sap.slice wmp-sample-memory.service wmp-sample-memory.timer
+%service_del_postun wmp-sample-memory.service wmp-sample-memory.timer
 
 %files
 %dir %{_libexecdir}/sapwmp
