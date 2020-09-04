@@ -84,13 +84,13 @@ display_file /proc/cmdline
 display_file /etc/default/grub
 display_rpm sapwmp
 display_file /etc/sapwmp.conf
-display_cmd systemctl cat sap.slice
-display_cmd systemctl show -p MemoryLow sap.slice
+display_cmd systemctl cat SAP.slice
+display_cmd systemctl show -p MemoryLow SAP.slice
 display_cmd systemctl status wmp-sample-memory.timer
 display_cmd systemctl cat wmp-sample-memory.timer
 display_instance_profiles
 display_cmd systemd-cgls --all --no-pager
-display_cgroup /sys/fs/cgroup/sap.slice
+display_cgroup /sys/fs/cgroup/SAP.slice
 display_cgroup /sys/fs/cgroup/system.slice
 display_cgroup /sys/fs/cgroup/user.slice
 display_cgroup /sys/fs/cgroup/init.scope

@@ -26,7 +26,7 @@ Group:          Productivity/Databases/Servers
 URL:            https://gitlab.suse.de/mkoutny/wmp-repo/
 Source0:        %{name}-%{version}.tar.xz
 Source1:        sapwmp.conf
-Source2:        sap.slice
+Source2:        SAP.slice
 Source3:        supportconfig-sapwmp
 Source4:        wmp-sample-memory.sh
 Source5:        wmp-sample-memory.service
@@ -58,7 +58,7 @@ Configuration and utilities for collecting SAP processes under control group to 
 %install
 %make_install
 install -D -m 644 %{SOURCE1} %{buildroot}/%{_sysconfdir}/sapwmp.conf
-install -D -m 644 %{SOURCE2} %{buildroot}/%{_unitdir}/sap.slice
+install -D -m 644 %{SOURCE2} %{buildroot}/%{_unitdir}/SAP.slice
 install -D -m 755 %{SOURCE3} %{buildroot}/usr/lib/supportconfig/plugins/sapwmp
 install -D -m 744 %{SOURCE4} %{buildroot}/%{_libexecdir}/sapwmp/wmp-sample-memory
 install -D -m 644 %{SOURCE5} %{buildroot}/%{_unitdir}/wmp-sample-memory.service
@@ -97,7 +97,7 @@ fi
 %dir %{_libexecdir}/sapwmp
 %verify(not user group mode) %attr(4750,root,%{group_sapsys}) %{_libexecdir}/sapwmp/sapwmp-capture
 %{_libexecdir}/sapwmp/wmp-sample-memory
-%{_unitdir}/sap.slice
+%{_unitdir}/SAP.slice
 %{_unitdir}/wmp-sample-memory.service
 %{_unitdir}/wmp-sample-memory.timer
 %config %{_sysconfdir}/sapwmp.conf

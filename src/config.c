@@ -9,7 +9,7 @@
 #define LINE_LEN		1024
 
 int config_init(struct config *config) {
-	config->slice = strdup("sap.slice");
+	config->slice = strdup("SAP.slice");
 	if (!config->slice)
 		return -ENOMEM;
 
