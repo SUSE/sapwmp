@@ -38,6 +38,10 @@ BuildRequires:  systemd-rpm-macros
 Requires(post): %fillup_prereq
 Requires(post): permissions
 Requires:       util-linux-systemd
+# We need kernel fix for bsc#1174002
+%if 0%{?sle_version} == 150200 && !0%{?is_opensuse}
+Requires:       kernel >= 5.3.18-24.12
+%endif
 %{?systemd_requires}
 
 %description
