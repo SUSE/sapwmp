@@ -1,10 +1,16 @@
 #!/bin/bash
 set -u
 
+version="1.0"
+
 function display_file() {
     echo -e "\n#==[ Configuration File ]===========================#"
     echo -e "# ${1}"
-    cat "${1}"
+    if [ -e "${1}" ] ; then
+        cat "${1}"
+    else
+       echo "${1} does not exist."
+    fi
 }
 
 
@@ -23,7 +29,8 @@ function display_cmd() {
 function display_cgroup() {
     local f
     echo -e "\n#==[ Cgroup ]=======================================#"
-    for f in memory.low memory.current memory.stat memory.events ; do
+    for f in memory.low memory.current memory.stat memory.events memory.swap.current  ; do
+        [[ -e "${1}/${f}" ]] || continue
         echo "# ${1}/${f}"
         cat ${1}/${f}
         echo
@@ -79,25 +86,36 @@ function display_swapped_procs() {
 
 
 # ---- Main ----
+echo "# Version: ${version}"
 display_cmd grep cgroup /proc/mounts
 display_file /proc/cmdline
 display_file /etc/default/grub
 display_rpm sapwmp
 display_file /etc/sapwmp.conf
-display_cmd systemctl cat SAP.slice
-display_cmd systemctl show -p MemoryLow SAP.slice
+(
+if [ -e /etc/sapwmp.conf ] ; then
+    . /etc/sapwmp.conf
+    if [ -n "${DEFAULT_SLICE:=}" ] ; then
+        display_cmd systemctl cat "${DEFAULT_SLICE}"
+        display_cmd systemctl show -p MemoryLow "${DEFAULT_SLICE}"
+        while read subcgroup ; do
+            display_cmd systemctl cat "${subcgroup##*/}"
+        done < <(find "/sys/fs/cgroup/${DEFAULT_SLICE}" -mindepth 1 -maxdepth 1 -type d)
+    else
+        echo -e "\n#==[ Variable ]=====================================#\nDEFAULT_SLICE (/etc/sapwmp.conf) not set!"
+    fi
+fi
+)
 display_cmd systemctl status wmp-sample-memory.timer
 display_cmd systemctl cat wmp-sample-memory.timer
 display_instance_profiles
 display_cmd systemd-cgls --all --no-pager
-display_cgroup /sys/fs/cgroup/SAP.slice
-display_cgroup /sys/fs/cgroup/system.slice
-display_cgroup /sys/fs/cgroup/user.slice
-display_cgroup /sys/fs/cgroup/init.scope
+while read path ; do
+        display_cgroup "${path}"
+done < <(find /sys/fs/cgroup/ -mindepth 1 -maxdepth 1 -type d)
 display_swapped_procs
-display_log '/var/log/messages*' sapwmp-capture
-display_log '/var/log/messages' wmp_memory_current 10
+display_log '/var/log/messages*' sapwmp-capture 100
+display_log '/var/log/messages' wmp_memory_current 100
 
 # Bye.
 exit 0
-
