@@ -23,7 +23,15 @@ Release:        0
 Summary:        Configuration and utilities for collecting SAP processes under control group
 License:        GPL-2.0-only
 Group:          Productivity/Databases/Servers
-URL:            https://gitlab.suse.de/mkoutny/wmp-repo/
+%if 0%{?sle_version} == 150000 && !0%{?is_opensuse}
+URL:            https://documentation.suse.com/sles-sap/15-GA/html/SLES4SAP-guide/cha-s4s-tune.html#sec-s4s-memory-protection
+%endif
+%if 0%{?sle_version} == 150100 && !0%{?is_opensuse}
+URL:            https://documentation.suse.com/sles-sap/15-SP1/html/SLES4SAP-guide/cha-s4s-tune.html#sec-s4s-memory-protection
+%endif
+%if 0%{?sle_version} >= 150200 && !0%{?is_opensuse}
+URL:            https://documentation.suse.com/sles-sap/15-SP2/html/SLES-SAP-guide/cha-tune.html#sec-memory-protection
+%endif
 Source0:        %{name}-%{version}.tar.xz
 Source1:        sapwmp.conf
 Source2:        SAP.slice
