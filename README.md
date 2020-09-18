@@ -1,12 +1,10 @@
 # WMP
 
-This repo and scripts serve to provide reference configuration files, their
-version tracking and reproducible deployment as RPM package.
-
-This is based on modifying SAP profile. For the rejected and unmaintained
-variant see the branch
-
-  * [PAM based](https://gitlab.suse.de/mkoutny/wmp-repo/tree/pam-rpm).
+This repo contains sapwmp-capture utility and reference configuration files, so
+that their version is tracked and can be deplyoed in uniform way as RPM
+package.
+(Ideally, SAP would be an ordinary systemd service and all this stuff would be
+just a paragraph in our documentation how to add `MemoryLow=`.)
 
 ## How to use this
 
@@ -21,13 +19,22 @@ Execute_20 = local /usr/lib/sapwmp/sapwmp-capture -a
 ...
 ```
 
+More details about SAP WMP in general is in
+[Confluence](https://confluence.suse.com/display/SAP/Workload+Memory+Protection).
+
+
 ## Making updates
 
-  * Commit into git, then trigger service in appropriate package of [IBS project](https://build.suse.de/package/show/home:mkoutny:wmp/)
-    to rebuild RPM.
-  * The submitted package has disabled services and a snapshot is commited into IBS.
+  * Commit everything into git (changelog is generated from it), then run `iosc
+    service disabledrun` locally and commit into your IBS package.
+  * When preparing a MU, submit from your package into the respective target.
 
-## TODO
+## See also
 
-  * RPM: extensible (group) permissions 
+Development [issue tracker](https://gitlab.suse.de/mkoutny/wmp-repo/-/issues).
+
+This is based on modifying SAP profile. For the rejected and unmaintained
+variant see the branch
+
+  * [PAM based](https://gitlab.suse.de/mkoutny/wmp-repo/tree/pam-rpm).
 
