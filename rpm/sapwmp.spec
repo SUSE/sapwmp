@@ -67,7 +67,7 @@ Configuration and utilities for collecting SAP processes under control group to 
 %make_install
 install -D -m 644 %{SOURCE1} %{buildroot}/%{_sysconfdir}/sapwmp.conf
 install -D -m 644 %{SOURCE2} %{buildroot}/%{_unitdir}/SAP.slice
-install -D -m 755 %{SOURCE3} %{buildroot}/usr/lib/supportconfig/plugins/sapwmp
+install -D -m 755 %{SOURCE3} %{buildroot}%{_prefix}/lib/supportconfig/plugins/sapwmp
 install -D -m 744 %{SOURCE4} %{buildroot}/%{_libexecdir}/sapwmp/wmp-sample-memory
 install -D -m 644 %{SOURCE5} %{buildroot}/%{_unitdir}/wmp-sample-memory.service
 install -D -m 644 %{SOURCE6} %{buildroot}/%{_unitdir}/wmp-sample-memory.timer
@@ -118,9 +118,8 @@ fi
 %{_unitdir}/wmp-sample-memory.service
 %{_unitdir}/wmp-sample-memory.timer
 %config %{_sysconfdir}/sapwmp.conf
-%dir /usr/lib/supportconfig
-%dir /usr/lib/supportconfig/plugins
-/usr/lib/supportconfig/plugins/sapwmp
-
+%dir %{_prefix}/lib/supportconfig
+%dir %{_prefix}/lib/supportconfig/plugins
+%{_prefix}/lib/supportconfig/plugins/sapwmp
 
 %changelog
