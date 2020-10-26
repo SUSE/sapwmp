@@ -31,10 +31,8 @@ More details about SAP WMP in general is in
 
 ## See also
 
-Development [issue tracker](https://gitlab.suse.de/mkoutny/wmp-repo/-/issues).
-
 This is based on modifying SAP profile. For the rejected and unmaintained
 variant see the branch
 
-  * [PAM based](https://gitlab.suse.de/mkoutny/wmp-repo/tree/pam-rpm).
+  * [PAM based](https://gitlab.suse.de/mkoutny/wmp-repo/tree/pam-rpm) (non-public).
 
