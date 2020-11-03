@@ -28,11 +28,3 @@ More details about SAP WMP in general is in
   * Commit everything into git (changelog is generated from it), then run `iosc
     service disabledrun` locally and commit into your IBS package.
   * When preparing a MU, submit from your package into the respective target.
-
-## See also
-
-This is based on modifying SAP profile. For the rejected and unmaintained
-variant see the branch
-
-  * [PAM based](https://gitlab.suse.de/mkoutny/wmp-repo/tree/pam-rpm) (non-public).
-
