@@ -23,13 +23,13 @@ Release:        0
 Summary:        Configuration and utilities for collecting SAP processes under control group
 License:        GPL-2.0-only
 Group:          Productivity/Databases/Servers
-%if 0%{?sle_version} == 150000 && !0%{?is_opensuse}
+%if 0%{?sle_version} == 150000
 URL:            https://documentation.suse.com/sles-sap/15-GA/html/SLES4SAP-guide/cha-s4s-tune.html#sec-s4s-memory-protection
 %endif
-%if 0%{?sle_version} == 150100 && !0%{?is_opensuse}
+%if 0%{?sle_version} == 150100
 URL:            https://documentation.suse.com/sles-sap/15-SP1/html/SLES4SAP-guide/cha-s4s-tune.html#sec-s4s-memory-protection
 %endif
-%if 0%{?sle_version} >= 150200 && !0%{?is_opensuse}
+%if 0%{?sle_version} >= 150200
 URL:            https://documentation.suse.com/sles-sap/15-SP2/html/SLES-SAP-guide/cha-tune.html#sec-memory-protection
 %endif
 Source0:        %{name}-%{version}.tar.xz
@@ -47,7 +47,7 @@ Requires(post): %fillup_prereq
 Requires(post): permissions
 Requires:       util-linux-systemd
 # We need kernel fix for bsc#1174002
-%if 0%{?sle_version} == 150200 && !0%{?is_opensuse}
+%if 0%{?sle_version} == 150200
 Requires:       kernel >= 5.3.18-24.12
 %endif
 %{?systemd_requires}
