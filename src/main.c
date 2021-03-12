@@ -61,13 +61,17 @@ int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
 	if (r < 0)
 		return r;
 
-	r = sd_bus_message_append(m, "(sv)", "MemoryLow", "t", properties->memory_low);
-	if (r < 0)
-		return r;
+	if (properties->memory_low) {
+		r = sd_bus_message_append(m, "(sv)", "MemoryLow", "t", properties->memory_low);
+		if (r < 0)
+			return r;
+	}
 
-	r = sd_bus_message_append(m, "(sv)", "TasksMax", "t", properties->tasks_max);
-	if (r < 0)
-		return r;
+	if (properties->tasks_max) {
+		r = sd_bus_message_append(m, "(sv)", "TasksMax", "t", properties->tasks_max);
+		if (r < 0)
+			return r;
+	}
 
 	/* PIDs array
 	 * container nesting: (sv(a(u)))
