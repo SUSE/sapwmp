@@ -6,18 +6,53 @@
 #include "config.h"
 #include "log.h"
 
+#define KILL_MODE_NONE		"none"
 #define LINE_LEN		1024
 
+static void free_str_list(struct str_list *l) {
+	free(l->list);
+	free(l->data);
+}
+
+/* Initialize configuration with default values */
 int config_init(struct config *config) {
+	int ret;
+
 	config->slice = strdup("SAP.slice");
-	if (!config->slice)
-		return -ENOMEM;
+	if (!config->slice) {
+		ret = -ENOMEM;
+		goto fail;
+	}
 
 	config->parent_commands.data = NULL;
 	config->parent_commands.list = NULL;
 
+	/* These scopes are for resource control only, processes must be
+	 * stopped by other means, only the scope terminates*/
+	config->scope_properties.kill_mode = strdup(KILL_MODE_NONE);
+	if (!config->scope_properties.kill_mode) {
+		ret = -ENOMEM;
+		goto fail;
+	}
+
+	/* Parent slice will control actual limit */
+	config->scope_properties.memory_low = CGROUP_LIMIT_MAX;
+
+	/* By default these scopes shouldn't apply the default finite limit,
+	 * see also SLE-10123. */
+	config->scope_properties.tasks_max = CGROUP_LIMIT_MAX;
+
 	return 0;
+fail:
+	config_deinit(config);
+	return ret;
 }
+
+void config_deinit(struct config *config) {
+	free_str_list(&config->parent_commands);
+	free(config->slice);
+}
+
 
 /*
  * Remove leading and trailing characters from the set from the given string
@@ -75,8 +110,7 @@ static int parse_list(struct str_list *rl, char *s, const char *delim) {
 		*(pl++) = c;
 	}
 
-	free(rl->list);
-	free(rl->data);
+	free_str_list(rl);
 	rl->data = l.data;
 	rl->list = l.list;
 	return 0;
