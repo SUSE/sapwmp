@@ -1,6 +1,6 @@
 #include <assert.h>
-#include <linux/limits.h>
 #include <errno.h>
+#include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,7 +11,6 @@
 #include "config.h"
 #include "log.h"
 
-#define CGROUP_LIMIT_MAX	((uint64_t) -1)
 #define MAX_PIDS		16
 #define CONF_FILE		"/etc/sapwmp.conf"
 #define TASK_COMM_LEN		18	/* +2 for parentheses */
@@ -41,6 +40,7 @@ static inline void freep(void *p) {
 }
 
 int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
+            struct unit_config *properties,
             size_t n_pids, pid_t *pids) {
 	_cleanup_(sd_bus_message_unrefp) sd_bus_message *m = NULL;
 	_cleanup_(sd_bus_error_free) sd_bus_error bus_error = SD_BUS_ERROR_NULL;
@@ -67,9 +67,7 @@ int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
 	if (r < 0)
 		return r;
 
-	/* These scopes are for resource control only, processes must be
-	 * stopped by other means, only the scope terminates*/
-	r = sd_bus_message_append(m, "(sv)", "KillMode", "s", "none");
+	r = sd_bus_message_append(m, "(sv)", "KillMode", "s", properties->kill_mode);
 	if (r < 0)
 		return r;
 
@@ -77,14 +75,11 @@ int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
 	if (r < 0)
 		return r;
 
-	/* Parent slice will control actual limit */
-	r = sd_bus_message_append(m, "(sv)", "MemoryLow", "t", CGROUP_LIMIT_MAX);
+	r = sd_bus_message_append(m, "(sv)", "MemoryLow", "t", properties->memory_low);
 	if (r < 0)
 		return r;
 
-	/* By default these scopes shouldn't apply the default finite limit,
-	 * see also SLE-10123. */
-	r = sd_bus_message_append(m, "(sv)", "TasksMax", "t", CGROUP_LIMIT_MAX);
+	r = sd_bus_message_append(m, "(sv)", "TasksMax", "t", properties->tasks_max);
 	if (r < 0)
 		return r;
 
@@ -302,12 +297,13 @@ int main(int argc, char *argv[]) {
 	if (r < 0)
 		exit_error(EXIT_FAILURE, r, "Failed opening DBus");
 
-	r = migrate(bus, unit_name, config.slice, n_pids, pids);
+	r = migrate(bus, unit_name, config.slice, &config.scope_properties, n_pids, pids);
 	if (r < 0)
 		exit_error(EXIT_FAILURE, r, "Failed capture into %s/%s", config.slice, unit_name);
 
 	log_info("Successful capture into %s/%s", config.slice, unit_name);
 
-	/* skip config_deinit */
+	config_deinit(&config);
+
 	return EXIT_SUCCESS;
 }
