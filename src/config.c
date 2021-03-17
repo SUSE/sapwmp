@@ -127,6 +127,7 @@ static int parse_kill_mode(void *target, char *v) {
 
 	free(*p);
 	*p = v;
+	return 0;
 }
 
 static int parse_limit(void *target, char *v) {
@@ -144,12 +145,14 @@ static int parse_limit(void *target, char *v) {
 		return -errno;
 
 	*p = limit;
+	return 0;
 }
 
 static int parse_str(void *target, char *v) {
 	char **p = target;
 	free(*p);
 	*p = v;
+	return 0;
 }
 
 /*

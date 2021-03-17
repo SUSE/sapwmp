@@ -31,6 +31,7 @@ int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
 	_cleanup_(sd_bus_message_unrefp) sd_bus_message *m = NULL;
 	_cleanup_(sd_bus_error_free) sd_bus_error bus_error = SD_BUS_ERROR_NULL;
 	int r;
+	size_t i;
 
 	r = sd_bus_message_new_method_call(
 		bus,
@@ -91,7 +92,7 @@ int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
 	if (r < 0)
 		return r;
 
-	for (size_t i = 0; i < n_pids; i++) {
+	for (i = 0; i < n_pids; i++) {
 		r = sd_bus_message_append(m, "u", (uint32_t) pids[i]);
 		if (r < 0)
 			return r;
@@ -168,6 +169,7 @@ int collect_pids(pid_t **rpids) {
 	int n_pids = 0;
 	pid_t pid, ppid;
 	char comm[TASK_COMM_LEN + 1];
+	char **p;
 	pid_t *pids;
 
 	assert(rpids);
@@ -183,7 +185,7 @@ int collect_pids(pid_t **rpids) {
 		if (verbose)
 			log_debug("%10i: %s", pid, comm);
 
-		for (char **p = config.parent_commands.list; *p; p++) {
+		for (p = config.parent_commands.list; *p; p++) {
 			if(!strcmp(comm, *p)) {
 				pids[n_pids++] = pid;
 				break;
@@ -234,7 +236,7 @@ int main(int argc, char *argv[]) {
 	char unit_name[UNIT_NAME_LEN];
 	int opt, ancestors = 0;
 	int n_pids;
-	int r;
+	int r, i;
 
 	log_init();
 
@@ -279,7 +281,7 @@ int main(int argc, char *argv[]) {
 		exit_error(EXIT_FAILURE, r, "Failed creating scope name");
 
 	log_info("Found PIDs: ");
-	for (int i = 0; i < n_pids; i++) {
+	for (i = 0; i < n_pids; i++) {
 		log_info("%10i", pids[i]);
 	}
 
