@@ -61,7 +61,13 @@ Configuration and utilities for collecting SAP processes under control group to 
 %build
 ./autogen.sh
 %configure
+# make_build not defined in SLE12, so need conditions to check
+%if "x%{?make_build}" != "x"
 %make_build
+%else
+%{__make} %{?jobs:-j%jobs}%{?!jobs:%{?_smp_mflags:%_smp_mflags}}
+%endif
+
 
 %install
 %make_install
