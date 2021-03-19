@@ -19,6 +19,18 @@
 
 #define _cleanup_(x) __attribute__((cleanup(x)))
 
+#ifndef _SD_DEFINE_POINTER_CLEANUP_FUNC
+#define _SD_DEFINE_POINTER_CLEANUP_FUNC(type, func)             \
+        static inline void func##p(type **p) {                  \
+                if (*p)                                         \
+                        func(*p);                               \
+        }                                                       \
+        struct __useless_struct_to_allow_trailing_semicolon__
+
+_SD_DEFINE_POINTER_CLEANUP_FUNC(sd_bus_message, sd_bus_message_unref);
+_SD_DEFINE_POINTER_CLEANUP_FUNC(sd_bus, sd_bus_flush_close_unref);
+#endif
+
 static int verbose;
 static struct config config;
 
