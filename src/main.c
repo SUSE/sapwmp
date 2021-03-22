@@ -19,6 +19,8 @@
 
 #define _cleanup_(x) __attribute__((cleanup(x)))
 
+/* Upstream commit 4afd3348c in * src/systemd/_sd-common.h
+ * Back port in SLE15 */
 #ifndef _SD_DEFINE_POINTER_CLEANUP_FUNC
 #define _SD_DEFINE_POINTER_CLEANUP_FUNC(type, func)             \
         static inline void func##p(type **p) {                  \
