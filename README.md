@@ -28,3 +28,12 @@ More details about SAP WMP in general is in
   * Commit everything into git (changelog is generated from it), then run `iosc
     service disabledrun` locally and commit into your IBS package.
   * When preparing a MU, submit from your package into the respective target.
+
+
+## Tools
+
+  * [wmp-check.sh](./scripts/wmp-check.sh)
+```
+# A script checks the setup of Workload Memory Protection.
+$ wmp-check.sh
+```
