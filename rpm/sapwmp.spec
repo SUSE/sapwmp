@@ -33,12 +33,6 @@ URL:            https://documentation.suse.com/sles-sap/15-SP1/html/SLES4SAP-gui
 URL:            https://documentation.suse.com/sles-sap/15-SP2/html/SLES-SAP-guide/cha-tune.html#sec-memory-protection
 %endif
 Source0:        %{name}-%{version}.tar.xz
-Source1:        sapwmp.conf
-Source2:        SAP.slice
-Source3:        supportconfig-sapwmp
-Source4:        wmp-sample-memory.sh
-Source5:        wmp-sample-memory.service
-Source6:        wmp-sample-memory.timer
 BuildRequires:  autoconf
 BuildRequires:  automake
 BuildRequires:  systemd-devel
@@ -71,12 +65,17 @@ Configuration and utilities for collecting SAP processes under control group to 
 
 %install
 %make_install
-install -D -m 644 %{SOURCE1} %{buildroot}/%{_sysconfdir}/sapwmp.conf
-install -D -m 644 %{SOURCE2} %{buildroot}/%{_unitdir}/SAP.slice
-install -D -m 755 %{SOURCE3} %{buildroot}%{_prefix}/lib/supportconfig/plugins/sapwmp
-install -D -m 744 %{SOURCE4} %{buildroot}/%{_libexecdir}/sapwmp/wmp-sample-memory
-install -D -m 644 %{SOURCE5} %{buildroot}/%{_unitdir}/wmp-sample-memory.service
-install -D -m 644 %{SOURCE6} %{buildroot}/%{_unitdir}/wmp-sample-memory.timer
+%define wmpd %{_builddir}/%{name}-%{version}
+install -D -m 644 %{wmpd}/rpm/sapwmp.conf %{buildroot}/%{_sysconfdir}/sapwmp.conf
+install -D -m 644 %{wmpd}/rpm/SAP.slice %{buildroot}/%{_unitdir}/SAP.slice
+install -D -m 755 %{wmpd}/rpm/supportconfig-sapwmp %{buildroot}%{_prefix}/lib/supportconfig/plugins/sapwmp
+install -D -m 744 %{wmpd}/rpm/wmp-sample-memory.sh %{buildroot}/%{_libexecdir}/sapwmp/wmp-sample-memory
+install -D -m 744 %{wmpd}/rpm/wmp-sample-memory.service %{buildroot}/%{_unitdir}/wmp-sample-memory.service
+install -D -m 744 %{wmpd}/rpm/wmp-sample-memory.timer %{buildroot}/%{_unitdir}/wmp-sample-memory.timer
+
+mkdir -p %{buildroot}/%{_libexecdir}/sapwmp/scripts
+install -D -m 755 %{wmpd}/scripts/*.sh %{buildroot}/%{_libexecdir}/sapwmp/scripts/
+install -D -m 644 %{wmpd}/scripts/README* %{buildroot}/%{_libexecdir}/sapwmp/scripts/
 
 %verifyscript
 %verify_permissions -e %{_libexecdir}/sapwmp/sapwmp-capture
@@ -127,5 +126,6 @@ fi
 %dir %{_prefix}/lib/supportconfig
 %dir %{_prefix}/lib/supportconfig/plugins
 %{_prefix}/lib/supportconfig/plugins/sapwmp
+%{_libexecdir}/sapwmp/scripts
 
 %changelog
