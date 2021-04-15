@@ -187,6 +187,9 @@ int collect_pids(pid_t **rpids) {
 
 	assert(rpids);
 
+	if (!config.parent_commands.list)
+		return 0;
+
 	pids = malloc(sizeof(pid_t) * MAX_PIDS);
 	if (!pids)
 		return -ENOMEM;
