@@ -163,3 +163,6 @@ WMP is set up correctly.
 |            |          | Check generated grub2 configure                       |
 |            |          | Enable support for SLE15SP0/SP1                       |
 |            |          | Support RPM package version check                     |
+| 19.04.2021 | v1.1.2   | Remove sapstartsrv from process tree to capture       |
+|            |          | Enable support for SLE15SP3                           |
+

@@ -41,8 +41,10 @@
 #                       Check generated grub2 configure
 #                       Enable support for SLE15SP0/SP1
 #                       Support RPM package version check
+# 19.04.2021  v1.1.2    Remove sapstartsrv from process tree to capture
+#                       Enable support for SLE15SP3
 
-version="1.1.1"
+version="1.1.2"
 
 # We use these global arrays through out the program:
 #
@@ -55,11 +57,10 @@ version="1.1.1"
 # SAP_slice_data                 -  contains information about SAP.slice
 # SAP_instance_processes         -  contains pids of that instance
 # SAP_processes_outside_cgroup   -  contains pids of that instance which are not in SAP.slice
-# SAP_sapstartsrv_outside_cgroup -  contains flag per instance if only sapstartsrv processes are outside the cgroup
 # unit_state_active              -  contains systemd unit state (systemctl is-active) 
 # unit_state_enabled             -  contains systemd unit state (systemctl is-enabled) 
 # swapaccounting_state           -  contains if cgroup swap accounting is configured and active
-declare -A package_version required_pkgs cgroup_unified capture_state memory_info SAP_profile_path SAP_profile_wmp_entry SAP_slice_data SAP_instance_processes SAP_processes_outside_cgroup SAP_sapstartsrv_outside_cgroup unit_state_active unit_state_enabled swapaccounting_state
+declare -A package_version required_pkgs cgroup_unified capture_state memory_info SAP_profile_path SAP_profile_wmp_entry SAP_slice_data SAP_instance_processes SAP_processes_outside_cgroup unit_state_active unit_state_enabled swapaccounting_state
 
 # Required packages list
 # examples:
@@ -308,12 +309,12 @@ function get_SAP_process_data() {
     #
     # Determines all processes of SAP instances and the ones outside SAP.slice.
     #
-    # The function updates the associative arrays "SAP_instance_processes" and "SAP_processes_outside_cgroup" and "SAP_sapstartsrv_outside_cgroup"
+    # The function updates the associative arrays "SAP_instance_processes" and "SAP_processes_outside_cgroup"
     # as well as the variables "SAP_processes" and "SAP_processes_outside".
     #
     # Requires: -
 
-    local pd line pid comm state ppid proc_ppid proc_comm sapstart_pids parent sapstart_list tmp_pid cmdline component profile_name instance cgroup sapstartsrv_proc no_sapstartsrv_proc 
+    local pd line pid comm state ppid proc_ppid proc_comm sapstart_pids parent sapstart_list tmp_pid cmdline component profile_name instance cgroup
     declare -A proc_ppid proc_comm sapstart_pids 
 
     # Collect current process information and create a list of sapstart/sapstartsrv processes.
@@ -328,11 +329,11 @@ function get_SAP_process_data() {
         ppid="${line%% *}" ; line="${line#* }"
         proc_ppid[${pid}]=${ppid} 
         proc_comm[${pid}]="${comm}" 
-        [[ "${comm}" =~ ^sapstart(|srv)$ ]] && sapstart_pids[${pid}]="${pid}"
+        [[ "${comm}" =~ ^sapstart$ ]] && sapstart_pids[${pid}]="${pid}"
     done
 
-    # Go through all pids and walk back through it's parents. and identify children of sapstart/sapstartsrv.
-    sapstart_list=" ${!sapstart_pids[@]} "  # all sapstart/sapstartsrv processes as string (leading and trailling spaces are important!) 
+    # Go through all pids and walk back through it's parents. and identify children of sapstart.
+    sapstart_list=" ${!sapstart_pids[@]} "  # all sapstart processes as string (leading and trailling spaces are important!)
     for pid in "${!proc_ppid[@]}" ; do
         parent=${proc_ppid[${pid}]}
         while [ ${parent} -gt 1 ] ; do
@@ -358,26 +359,14 @@ function get_SAP_process_data() {
     # Collect all instance processes which are not in SAP.slice.
     SAP_processes=0
     for instance in "${!SAP_instance_processes[@]}" ; do
-        sapstartsrv_proc=0
-        no_sapstartsrv_proc=0
-	SAP_sapstartsrv_outside_cgroup[${instance}]=0
         for pid in ${SAP_instance_processes[${instance}]} ; do
-	    ((SAP_processes++))
+            ((SAP_processes++))
             [ -e "/proc/${pid}/cgroup" ] || continue
-            if ! grep -q '^0::/SAP.slice/' "/proc/${pid}/cgroup" ; then 
-		SAP_processes_outside_cgroup[${instance}]="${SAP_processes_outside_cgroup[${instance}]} ${pid}"
-		((SAP_processes_outside++))
-		if [ "${proc_comm[${pid}]}" = "sapstartsrv" ] ; then 
-                    ((sapstartsrv_proc++))
-		else
-		    ((no_sapstartsrv_proc++)) 
-		fi
-
-	    fi
+            if ! grep -q '^0::/SAP.slice/' "/proc/${pid}/cgroup" ; then
+                SAP_processes_outside_cgroup[${instance}]="${SAP_processes_outside_cgroup[${instance}]} ${pid}"
+                ((SAP_processes_outside++))
+            fi
         done
-        if [ ${sapstartsrv_proc} -gt 0 -a  ${no_sapstartsrv_proc} -eq 0 ] ; then
-	    SAP_sapstartsrv_outside_cgroup[${instance}]=1
-	fi 
     done
 
 }
@@ -680,22 +669,17 @@ function check_wmp() {
         ((fails++))
     else
         for instance in "${!SAP_instance_processes[@]}" ; do
-            case "${SAP_processes_outside_cgroup[${instance}]}" in 
+            case "${SAP_processes_outside_cgroup[${instance}]}" in
                 '')
                     print_ok "All processes of ${instance} are in SAP.slice."
                     ;;
                 *)
-		    if [ ${SAP_sapstartsrv_outside_cgroup[${instance}]} -eq 1 ] ; then
-	    	        print_warn "Only sapstartsrv processes of ${instance} are outside SAP.slice!" "This is a special case and can be expected. Check documentation for details."
-			((warning++))
-		    else
-                        print_fail "Instance ${instance} has processes outside SAP.slice:${SAP_processes_outside_cgroup[${instance}]}."
-			((fails++))
-		    fi 	 
+                    print_fail "Instance ${instance} has processes outside SAP.slice:${SAP_processes_outside_cgroup[${instance}]}."
+                    ((fails++))
                     ;;
             esac
         done
-     fi	
+     fi
 
 
     # Check if MemoryLow of the SAP slice is lower the memory.current and less then 3% as physical memory.
@@ -793,13 +777,10 @@ PROD=""
 
 [ -f "/etc/products.d/SLES_SAP.prod" ] && PROD="4sap"
 case "${ID}${PROD}-${VERSION-ID}" in
-    sles4sap-15|sles4sap-15-SP1|sles4sap-15-SP2)
-        ;;
-    sles4sap-15-SP3)
-        echo "Only SLES for SAP Applications 15 SP0/SP1/SP2 are supported yet! Support for ${VERSION} will follow soon. Exiting."
+    sles4sap-15|sles4sap-15-SP1|sles4sap-15-SP2|sles4sap-15-SP3)
         ;;
     *)
-        echo "Only SLES for SAP Applications 15 SP0/SP1/SP2 are supported! Your OS is ${ID}${PROD}-${VERSION}. Exiting."
+        echo "Only SLES for SAP Applications 15 SP0/1/2/3 are supported! Your OS is ${ID}${PROD}-${VERSION}. Exiting."
         exit 2
         ;;
 esac
