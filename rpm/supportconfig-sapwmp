@@ -87,6 +87,7 @@ function display_swapped_procs() {
 
 # ---- Main ----
 echo "# Version: ${version}"
+display_cmd wmp-check
 display_cmd grep cgroup /proc/mounts
 display_file /proc/cmdline
 display_file /etc/default/grub
