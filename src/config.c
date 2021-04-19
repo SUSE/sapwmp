@@ -6,18 +6,55 @@
 #include "config.h"
 #include "log.h"
 
+#define KILL_MODE_NONE		"none"
+#define LIST_DELIM		","
 #define LINE_LEN		1024
 
+static void free_str_list(struct str_list *l) {
+	free(l->list);
+	free(l->data);
+}
+
+/* Initialize configuration with default values */
 int config_init(struct config *config) {
+	int ret;
+
 	config->slice = strdup("SAP.slice");
-	if (!config->slice)
-		return -ENOMEM;
+	if (!config->slice) {
+		ret = -ENOMEM;
+		goto fail;
+	}
 
 	config->parent_commands.data = NULL;
 	config->parent_commands.list = NULL;
 
+	/* These scopes are for resource control only, processes must be
+	 * stopped by other means, only the scope terminates*/
+	config->scope_properties.kill_mode = strdup(KILL_MODE_NONE);
+	if (!config->scope_properties.kill_mode) {
+		ret = -ENOMEM;
+		goto fail;
+	}
+
+	/* Parent slice will control actual limit */
+	config->scope_properties.memory_low = CGROUP_LIMIT_MAX;
+
+	/* By default these scopes shouldn't apply the default finite limit,
+	 * see also SLE-10123. */
+	config->scope_properties.tasks_max = CGROUP_LIMIT_MAX;
+
 	return 0;
+fail:
+	config_deinit(config);
+	return ret;
 }
+
+void config_deinit(struct config *config) {
+	free(config->scope_properties.kill_mode);
+	free_str_list(&config->parent_commands);
+	free(config->slice);
+}
+
 
 /*
  * Remove leading and trailing characters from the set from the given string
@@ -49,20 +86,21 @@ static char *unquote(char *s) {
 }
 
 /*
- * Split string @s by delimiters @delim and store the structure into list
- * pointed by @rl.
- * New list is allocated and s ownership is passed to @rl.
+ * Split string @s and store the structure into str_list list
+ * pointed by @target.
+ * New list is allocated and s ownership is passed to str_list @target.
  */
-static int parse_list(struct str_list *rl, char *s, const char *delim) {
+static int parse_list(void *target, char *s) {
+	struct str_list *rl = target;
 	char *c;
 	struct str_list l;
 	char **pl;
 	int n = 1;
 
 	l.data = s;
-	s = strstrip(s, delim);
+	s = strstrip(s, LIST_DELIM);
 	for (c = s; *c; c++)
-		if (strchr(delim, *c))
+		if (strchr(LIST_DELIM, *c))
 			n++;
 
 	/* Add one for NULL terminated list */
@@ -71,14 +109,51 @@ static int parse_list(struct str_list *rl, char *s, const char *delim) {
 		return -ENOMEM;
 
 	pl = l.list;
-	while ((c = strsep(&s, delim))) {
+	while ((c = strsep(&s, LIST_DELIM))) {
 		*(pl++) = c;
 	}
 
-	free(rl->list);
-	free(rl->data);
+	free_str_list(rl);
 	rl->data = l.data;
 	rl->list = l.list;
+	return 0;
+}
+
+static int parse_kill_mode(void *target, char *v) {
+	char **p = target;
+	/* Accept "none" only for the time being */
+	if (strcmp(KILL_MODE_NONE, v)) {
+		return -EINVAL;
+	}
+
+	free(*p);
+	*p = v;
+	return 0;
+}
+
+static int parse_limit(void *target, char *v) {
+	size_t *p = target;
+	size_t limit;
+
+	if (!strcmp("max", v) || !strcmp("infinity", v)) {
+		*p = CGROUP_LIMIT_MAX;
+		return 0;
+	}
+
+	errno = 0;
+	limit = strtoull(v, NULL, 10);
+	if (errno)
+		return -errno;
+
+	*p = limit;
+	free(v);
+	return 0;
+}
+
+static int parse_str(void *target, char *v) {
+	char **p = target;
+	free(*p);
+	*p = v;
 	return 0;
 }
 
@@ -93,6 +168,21 @@ int config_load(struct config *config, char *filename) {
 	char *line, *e, *k, *v;
 	FILE *f = fopen(filename, "r");
 	int r = -EINVAL;
+
+	/* When parse_func succeeds, it takes ownership of 2nd arg */
+	struct config_entry {
+		const char *key;
+		void *target;
+		int (*parse_func)(void *, char *);
+	} config_table[] = {
+		{"DEFAULT_SLICE",	&config->slice, parse_str},
+		{"PARENT_COMMANDS",	&config->parent_commands, parse_list},
+		{"SCOPE_KILL_MODE",	&config->scope_properties.kill_mode, parse_kill_mode},
+		{"SCOPE_MEMORY_LOW",	&config->scope_properties.memory_low, parse_limit},
+		{"SCOPE_TASKS_MAX",	&config->scope_properties.tasks_max, parse_limit},
+		{NULL},
+	};
+	struct config_entry *ce;
 
 	if (!f)
 		return -errno;
@@ -121,20 +211,24 @@ int config_load(struct config *config, char *filename) {
 			goto final;
 		}
 
-		/* Save configuration */
-		if (!strcmp("DEFAULT_SLICE", k)) {
-			free(config->slice);
-			config->slice = v;
-		} else if (!strcmp("PARENT_COMMANDS", k)) {
-			if (parse_list(&config->parent_commands, v, ",")) {
-				free(v);
-				log_info("config: Parsing failed for '%s'\n", k);
-				continue;
-			}
-		} else {
+		/* Look up key */
+		for (ce = config_table; ce->key; ++ce) {
+			if (!strcmp(ce->key, k))
+				break;
+		}
+
+		if (!ce->key) {
 			free(v);
 			log_info("config: Ignoring key '%s'\n", k);
+			continue;
 		}
+
+		/* Save configuration */
+		if (ce->parse_func(ce->target, v)) {
+			free(v);
+			log_info("config: Parsing failed for '%s'\n", k);
+		}
+
 	}
 	r = 0;
 
