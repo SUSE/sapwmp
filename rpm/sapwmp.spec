@@ -70,12 +70,14 @@ install -D -m 644 %{wmpd}/rpm/sapwmp.conf %{buildroot}/%{_sysconfdir}/sapwmp.con
 install -D -m 644 %{wmpd}/rpm/SAP.slice %{buildroot}/%{_unitdir}/SAP.slice
 install -D -m 755 %{wmpd}/rpm/supportconfig-sapwmp %{buildroot}%{_prefix}/lib/supportconfig/plugins/sapwmp
 install -D -m 744 %{wmpd}/rpm/wmp-sample-memory.sh %{buildroot}/%{_libexecdir}/sapwmp/wmp-sample-memory
-install -D -m 744 %{wmpd}/rpm/wmp-sample-memory.service %{buildroot}/%{_unitdir}/wmp-sample-memory.service
-install -D -m 744 %{wmpd}/rpm/wmp-sample-memory.timer %{buildroot}/%{_unitdir}/wmp-sample-memory.timer
+install -D -m 644 %{wmpd}/rpm/wmp-sample-memory.service %{buildroot}/%{_unitdir}/wmp-sample-memory.service
+install -D -m 644 %{wmpd}/rpm/wmp-sample-memory.timer %{buildroot}/%{_unitdir}/wmp-sample-memory.timer
 
 mkdir -p %{buildroot}/%{_libexecdir}/sapwmp/scripts
 install -D -m 755 %{wmpd}/scripts/*.sh %{buildroot}/%{_libexecdir}/sapwmp/scripts/
-install -D -m 644 %{wmpd}/scripts/README* %{buildroot}/%{_libexecdir}/sapwmp/scripts/
+
+mkdir -p %{buildroot}/%{_defaultdocdir}/sapwmp
+install -D -m 644 %{wmpd}/scripts/README* %{buildroot}/%{_defaultdocdir}/sapwmp
 
 %verifyscript
 %verify_permissions -e %{_libexecdir}/sapwmp/sapwmp-capture
@@ -127,5 +129,6 @@ fi
 %dir %{_prefix}/lib/supportconfig/plugins
 %{_prefix}/lib/supportconfig/plugins/sapwmp
 %{_libexecdir}/sapwmp/scripts
+%{_defaultdocdir}/sapwmp
 
 %changelog
