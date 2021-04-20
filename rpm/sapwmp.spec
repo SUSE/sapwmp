@@ -1,7 +1,7 @@
 #
 # spec file for package sapwmp
 #
-# Copyright (c) 2020 SUSE LLC
+# Copyright (c) 2021 SUSE LLC
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -73,8 +73,8 @@ install -D -m 744 %{wmpd}/rpm/wmp-sample-memory.sh %{buildroot}/%{_libexecdir}/s
 install -D -m 644 %{wmpd}/rpm/wmp-sample-memory.service %{buildroot}/%{_unitdir}/wmp-sample-memory.service
 install -D -m 644 %{wmpd}/rpm/wmp-sample-memory.timer %{buildroot}/%{_unitdir}/wmp-sample-memory.timer
 
-mkdir -p %{buildroot}/%{_libexecdir}/sapwmp/scripts
-install -D -m 755 %{wmpd}/scripts/*.sh %{buildroot}/%{_libexecdir}/sapwmp/scripts/
+mkdir -p %{buildroot}%{_sbindir}
+install -D -m 755 %{wmpd}/scripts/wmp-check.sh %{buildroot}%{_sbindir}/wmp-check
 
 mkdir -p %{buildroot}/%{_defaultdocdir}/sapwmp
 install -D -m 644 %{wmpd}/scripts/README* %{buildroot}/%{_defaultdocdir}/sapwmp
@@ -101,9 +101,9 @@ EOD
 # set with systemctl set-property and reassign to the current 'SAP.slice' (keep
 # runtime copy for 'sap.slice').
 # systemctl-daemon reload is implicit in the following service_add_post.
-if [ "$1" -eq "2" -a -d /etc/systemd/system.control/sap.slice.d ] ; then
-	cp -r /etc/systemd/system.control/sap.slice.d /run/systemd/system.control/sap.slice.d || :
-	mv /etc/systemd/system.control/sap.slice.d /etc/systemd/system.control/SAP.slice.d \
+if [ "$1" -eq "2" -a -d %{_sysconfdir}/systemd/system.control/sap.slice.d ] ; then
+	cp -r %{_sysconfdir}/systemd/system.control/sap.slice.d /run/systemd/system.control/sap.slice.d || :
+	mv %{_sysconfdir}/systemd/system.control/sap.slice.d %{_sysconfdir}/systemd/system.control/SAP.slice.d \
 	 && echo "Migrated configuration from sap.slice to SAP.slice"
 fi
 %service_add_post wmp-sample-memory.service wmp-sample-memory.timer
@@ -118,6 +118,7 @@ fi
 %service_del_postun wmp-sample-memory.service wmp-sample-memory.timer
 
 %files
+%defattr(-, root, root)
 %dir %{_libexecdir}/sapwmp
 %verify(not user group mode) %attr(4750,root,%{group_sapsys}) %{_libexecdir}/sapwmp/sapwmp-capture
 %{_libexecdir}/sapwmp/wmp-sample-memory
@@ -128,7 +129,7 @@ fi
 %dir %{_prefix}/lib/supportconfig
 %dir %{_prefix}/lib/supportconfig/plugins
 %{_prefix}/lib/supportconfig/plugins/sapwmp
-%{_libexecdir}/sapwmp/scripts
+%{_sbindir}/wmp-check
 %{_defaultdocdir}/sapwmp
 
 %changelog

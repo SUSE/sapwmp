@@ -23,7 +23,7 @@ Please keep in mind:
 
 ## Usage
 ```
-/usr/lib/sapwmp/scripts/wmp-check.sh
+wmp-check
 ```
 
 ## Examples
@@ -31,7 +31,7 @@ Please keep in mind:
 WMP has been setup correctly for all three existent SAP instances:
 
 ```
-# /usr/lib/sapwmp/scripts/wmp-check.sh
+# wmp-check
 
 This is wmp_check v0.1.
 It verifies if WMP is set up correctly.
@@ -66,7 +66,7 @@ WMP is set up correctly.
 Changing the instance profiles have been forgotten and the SAP instances are not running:
 
 ```
-# /usr/lib/sapwmp/scripts/wmp-check.sh
+# wmp-check
 
 This is wmp_check v0.1.
 It verifies if WMP is set up correctly.
@@ -101,7 +101,7 @@ WMP has been setup correctly for all three existent SAP instances, but there is 
 MemoryLow which *might* be to high and leaves to less memory for the rest of the system:
 
 ```
-# /usr/lib/sapwmp/scripts/wmp-check.sh
+# wmp-check
 
 This is wmp_check v0.1.
 It verifies if WMP is set up correctly.
