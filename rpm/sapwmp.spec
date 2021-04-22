@@ -1,7 +1,7 @@
 #
 # spec file for package sapwmp
 #
-# Copyright (c) 2020 SUSE LLC
+# Copyright (c) 2021 SUSE LLC
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -33,12 +33,6 @@ URL:            https://documentation.suse.com/sles-sap/15-SP1/html/SLES4SAP-gui
 URL:            https://documentation.suse.com/sles-sap/15-SP2/html/SLES-SAP-guide/cha-tune.html#sec-memory-protection
 %endif
 Source0:        %{name}-%{version}.tar.xz
-Source1:        sapwmp.conf
-Source2:        SAP.slice
-Source3:        supportconfig-sapwmp
-Source4:        wmp-sample-memory.sh
-Source5:        wmp-sample-memory.service
-Source6:        wmp-sample-memory.timer
 BuildRequires:  autoconf
 BuildRequires:  automake
 BuildRequires:  systemd-devel
@@ -71,12 +65,19 @@ Configuration and utilities for collecting SAP processes under control group to 
 
 %install
 %make_install
-install -D -m 644 %{SOURCE1} %{buildroot}/%{_sysconfdir}/sapwmp.conf
-install -D -m 644 %{SOURCE2} %{buildroot}/%{_unitdir}/SAP.slice
-install -D -m 755 %{SOURCE3} %{buildroot}%{_prefix}/lib/supportconfig/plugins/sapwmp
-install -D -m 744 %{SOURCE4} %{buildroot}/%{_libexecdir}/sapwmp/wmp-sample-memory
-install -D -m 644 %{SOURCE5} %{buildroot}/%{_unitdir}/wmp-sample-memory.service
-install -D -m 644 %{SOURCE6} %{buildroot}/%{_unitdir}/wmp-sample-memory.timer
+%define wmpd %{_builddir}/%{name}-%{version}
+install -D -m 644 %{wmpd}/rpm/sapwmp.conf %{buildroot}/%{_sysconfdir}/sapwmp.conf
+install -D -m 644 %{wmpd}/rpm/SAP.slice %{buildroot}/%{_unitdir}/SAP.slice
+install -D -m 755 %{wmpd}/rpm/supportconfig-sapwmp %{buildroot}%{_prefix}/lib/supportconfig/plugins/sapwmp
+install -D -m 744 %{wmpd}/rpm/wmp-sample-memory.sh %{buildroot}/%{_libexecdir}/sapwmp/wmp-sample-memory
+install -D -m 644 %{wmpd}/rpm/wmp-sample-memory.service %{buildroot}/%{_unitdir}/wmp-sample-memory.service
+install -D -m 644 %{wmpd}/rpm/wmp-sample-memory.timer %{buildroot}/%{_unitdir}/wmp-sample-memory.timer
+
+mkdir -p %{buildroot}%{_sbindir}
+install -D -m 755 %{wmpd}/scripts/wmp-check.sh %{buildroot}%{_sbindir}/wmp-check
+
+mkdir -p %{buildroot}/%{_defaultdocdir}/sapwmp
+install -D -m 644 %{wmpd}/scripts/README* %{buildroot}/%{_defaultdocdir}/sapwmp
 
 %verifyscript
 %verify_permissions -e %{_libexecdir}/sapwmp/sapwmp-capture
@@ -100,9 +101,9 @@ EOD
 # set with systemctl set-property and reassign to the current 'SAP.slice' (keep
 # runtime copy for 'sap.slice').
 # systemctl-daemon reload is implicit in the following service_add_post.
-if [ "$1" -eq "2" -a -d /etc/systemd/system.control/sap.slice.d ] ; then
-	cp -r /etc/systemd/system.control/sap.slice.d /run/systemd/system.control/sap.slice.d || :
-	mv /etc/systemd/system.control/sap.slice.d /etc/systemd/system.control/SAP.slice.d \
+if [ "$1" -eq "2" -a -d %{_sysconfdir}/systemd/system.control/sap.slice.d ] ; then
+	cp -r %{_sysconfdir}/systemd/system.control/sap.slice.d /run/systemd/system.control/sap.slice.d || :
+	mv %{_sysconfdir}/systemd/system.control/sap.slice.d %{_sysconfdir}/systemd/system.control/SAP.slice.d \
 	 && echo "Migrated configuration from sap.slice to SAP.slice"
 fi
 %service_add_post wmp-sample-memory.service wmp-sample-memory.timer
@@ -117,6 +118,7 @@ fi
 %service_del_postun wmp-sample-memory.service wmp-sample-memory.timer
 
 %files
+%defattr(-, root, root)
 %dir %{_libexecdir}/sapwmp
 %verify(not user group mode) %attr(4750,root,%{group_sapsys}) %{_libexecdir}/sapwmp/sapwmp-capture
 %{_libexecdir}/sapwmp/wmp-sample-memory
@@ -127,5 +129,7 @@ fi
 %dir %{_prefix}/lib/supportconfig
 %dir %{_prefix}/lib/supportconfig/plugins
 %{_prefix}/lib/supportconfig/plugins/sapwmp
+%{_sbindir}/wmp-check
+%{_defaultdocdir}/sapwmp
 
 %changelog
