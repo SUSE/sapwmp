@@ -43,6 +43,7 @@
 #                       Support RPM package version check
 # 19.04.2021  v1.1.2    Remove sapstartsrv from process tree to capture
 #                       Enable support for SLE15SP3
+# 1.11.2021             Enable support for SLE15SP4
 
 version="1.1.2"
 
@@ -777,10 +778,10 @@ PROD=""
 
 [ -f "/etc/products.d/SLES_SAP.prod" ] && PROD="4sap"
 case "${ID}${PROD}-${VERSION-ID}" in
-    sles4sap-15|sles4sap-15-SP1|sles4sap-15-SP2|sles4sap-15-SP3)
+    sles4sap-15|sles4sap-15-SP1|sles4sap-15-SP2|sles4sap-15-SP3|sles4sap-15-SP4)
         ;;
     *)
-        echo "Only SLES for SAP Applications 15 SP0/1/2/3 are supported! Your OS is ${ID}${PROD}-${VERSION}. Exiting."
+        echo "Only SLES for SAP Applications 15 SP0/1/2/3/4 are supported! Your OS is ${ID}${PROD}-${VERSION}. Exiting."
         exit 2
         ;;
 esac

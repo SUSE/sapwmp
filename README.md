@@ -20,6 +20,7 @@ Execute_20 = local /usr/lib/sapwmp/sapwmp-capture -a
 ```
 
 More details about SAP WMP in general is in
+[SUSE doc](https://documentation.suse.com/sles-sap/15-SP2/html/SLES-SAP-guide/cha-memory-protection.html).
 [Confluence](https://confluence.suse.com/display/SAP/Workload+Memory+Protection).
 
 
