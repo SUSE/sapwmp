@@ -13,6 +13,7 @@
 
 #define MAX_PIDS		16
 #define CONF_FILE		"/etc/sapwmp.conf"
+#define LINE_LEN		1024
 #define TASK_COMM_LEN		18	/* +2 for parentheses */
 #define UNIT_NAME_LEN		128
 
@@ -37,6 +38,42 @@ static struct config config;
 
 static inline void freep(void *p) {
 	free(*(void **)p);
+}
+
+int _already_in_systemd(pid_t pid, const char *target_slice) {
+	char path[PATH_MAX];
+	char buf[LINE_LEN];
+	char pattern[UNIT_NAME_LEN + 2];
+	FILE *f;
+	int r;
+
+	r = snprintf(path, PATH_MAX, "/proc/%i/cgroup", pid);
+	if (r < 0)
+		return r;
+
+	r = snprintf(pattern, UNIT_NAME_LEN + 2, "/%s/", target_slice);
+	if (r < 0)
+		return r;
+
+	f = fopen(path, "r");
+	if (!f)
+		return -errno;
+
+	while (fgets(buf, LINE_LEN, f)) {
+		if (strncmp(buf, "0:", 2) != 0)
+			continue;
+
+		if (strstr(buf, pattern)) {
+			log_info("Pid(%d) already in %s", pid, target_slice);
+			r = 1;
+			goto final;
+		}
+	}
+	r = 0;
+
+final:
+	fclose(f);
+	return r;
 }
 
 int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
@@ -106,6 +143,11 @@ int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
 		return r;
 
 	for (size_t i = 0; i < n_pids; i++) {
+		if (_already_in_systemd(pids[i], target_slice)) {
+			log_info("Skip pid(%d)", pids[i]);
+			continue;
+		}
+
 		r = sd_bus_message_append(m, "u", (uint32_t) pids[i]);
 		if (r < 0)
 			return r;
@@ -290,6 +332,10 @@ int main(int argc, char *argv[]) {
 		exit_error(EXIT_FAILURE, n_pids, "Failed collecting PIDs");
 	else if (n_pids == 0)
 		exit_error(EXIT_SUCCESS, 0, "Empty capture");
+	else if (n_pids == 1 && _already_in_systemd(pids[0], config.slice)) {
+		log_info("Do nothing");
+		return EXIT_SUCCESS;
+	}
 
 	r = make_scope_name(unit_name);
 	if (r < 0)
