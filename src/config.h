@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 #define CGROUP_LIMIT_MAX	((uint64_t) -1)
+#define LINE_LEN		1024
 
 /* List that was created as a split of a single string */
 struct str_list {

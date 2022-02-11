@@ -8,7 +8,6 @@
 
 #define KILL_MODE_NONE		"none"
 #define LIST_DELIM		","
-#define LINE_LEN		1024
 
 static void free_str_list(struct str_list *l) {
 	free(l->list);

@@ -13,7 +13,6 @@
 
 #define MAX_PIDS		16
 #define CONF_FILE		"/etc/sapwmp.conf"
-#define LINE_LEN		1024
 #define TASK_COMM_LEN		18	/* +2 for parentheses */
 #define UNIT_NAME_LEN		128
 
@@ -64,7 +63,6 @@ int _already_in_systemd(pid_t pid, const char *target_slice) {
 			continue;
 
 		if (strstr(buf, pattern)) {
-			log_info("Pid(%d) already in %s", pid, target_slice);
 			r = 1;
 			goto final;
 		}
@@ -143,11 +141,6 @@ int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
 		return r;
 
 	for (size_t i = 0; i < n_pids; i++) {
-		if (_already_in_systemd(pids[i], target_slice)) {
-			log_info("Skip pid(%d)", pids[i]);
-			continue;
-		}
-
 		r = sd_bus_message_append(m, "u", (uint32_t) pids[i]);
 		if (r < 0)
 			return r;
@@ -220,7 +213,7 @@ final:
 	return r;
 }
 
-int collect_pids(pid_t **rpids) {
+int collect_pids(pid_t **rpids, int force) {
 	int n_pids = 0;
 	pid_t pid, ppid;
 	char comm[TASK_COMM_LEN + 1];
@@ -244,7 +237,10 @@ int collect_pids(pid_t **rpids) {
 
 		for (char **p = config.parent_commands.list; *p; p++) {
 			if(!strcmp(comm, *p)) {
-				pids[n_pids++] = pid;
+				if (!force && _already_in_systemd(pid, config.slice))
+					log_info("Found pid(%d) already in %s", pid, config.slice);
+				else
+					pids[n_pids++] = pid;
 				break;
 			}
 		}
@@ -279,11 +275,12 @@ static int make_scope_name(char *buf) {
 }
 
 static void print_help(const char *name) {
-	fprintf(stderr, "Usage: %s [-hv] -a\n", name);
+	fprintf(stderr, "Usage: %s [-hvf] -a\n", name);
 	fprintf(stderr, "       Similar to systemd-run --scope, logs into syslog unless stderr is a TTY\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "       -h	Show this help\n");
 	fprintf(stderr, "       -v	Verbose logging (for debugging)\n");
+	fprintf(stderr, "       -f	Force protect all valid processes(including systemd launched)\n");
 	fprintf(stderr, "       -a	Put chosen ancestor processes under WMP scope\n");
 }
 
@@ -291,13 +288,13 @@ int main(int argc, char *argv[]) {
 	_cleanup_(sd_bus_flush_close_unrefp) sd_bus *bus = NULL;
 	_cleanup_(freep) pid_t *pids = NULL;
 	char unit_name[UNIT_NAME_LEN];
-	int opt, ancestors = 0;
+	int opt, ancestors = 0, force = 0;
 	int n_pids;
 	int r;
 
 	log_init();
 
-	while ((opt = getopt(argc, argv, "ahv")) != -1) {
+	while ((opt = getopt(argc, argv, "ahvf")) != -1) {
 		switch (opt) {
 		case 'a':
 			ancestors = 1;
@@ -307,6 +304,9 @@ int main(int argc, char *argv[]) {
 			return EXIT_SUCCESS;
 		case 'v':
 			verbose = 1;
+			break;
+		case 'f':
+			force = 1;
 			break;
 		default:
 			log_error("Unknown option(s), use -h for help");
@@ -327,15 +327,11 @@ int main(int argc, char *argv[]) {
 	if (r < 0)
 		exit_error(EXIT_FAILURE, r, "Failed loading config from '%s'", CONF_FILE);
 
-	n_pids = collect_pids(&pids);
+	n_pids = collect_pids(&pids, force);
 	if (n_pids < 0)
 		exit_error(EXIT_FAILURE, n_pids, "Failed collecting PIDs");
 	else if (n_pids == 0)
-		exit_error(EXIT_SUCCESS, 0, "Empty capture");
-	else if (n_pids == 1 && _already_in_systemd(pids[0], config.slice)) {
-		log_info("Do nothing");
 		return EXIT_SUCCESS;
-	}
 
 	r = make_scope_name(unit_name);
 	if (r < 0)
