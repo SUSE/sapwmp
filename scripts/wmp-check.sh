@@ -283,20 +283,20 @@ function get_SAP_slice_data() {
         SAP_slice_data['memory.current']=${SAP_slice_data['memory.current']:=0}
 
         error=0
-        while read path ; do 
-            if [ -e "${path}/memory.low" ] ; then
+        while read path ; do
+            if [ ! -e "${path}/memory.low" ] ; then
                 ((error++))
                 continue
             fi
             if [ "$(< ${path}/memory.low)" != 'max' ] ; then
                 ((error++))
                 continue
-            fi 
+            fi
         done < <(find "/sys/fs/cgroup/${SAP_slice_data['name']}/" -mindepth 1 -type d)
-        if [ ${error} -ne 0 ] ; then 
-            SAP_slice_data['memory_low_children']='ok'
-        else
+        if [ ${error} -ne 0 ] ; then
             SAP_slice_data['memory_low_children']='false'
+        else
+            SAP_slice_data['memory_low_children']='ok'
         fi
     else
         SAP_slice_data['exists']='no'
@@ -651,14 +651,14 @@ function check_wmp() {
                     ((fails++))
                     ;;
             esac
-            case "${SAP_slice_data['memory_low_children']}" in 
+            case "${SAP_slice_data['memory_low_children']}" in
                 false)
                     print_fail "Subcgroups of ${SAP_slice_data['name']} have either no MemoryLow setting or are not set to maximum!" "Check what has changed the parameters and restart the SAP instances."
                     ((fails++))
                     ;;
             esac
             ;;
-        no) 
+        no)
             print_fail "Unit file for ${SAP_slice_data['name']} is missing!" "Reinstall the sapwmp package."
             ((fails++))
             ;;
