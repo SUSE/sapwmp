@@ -44,8 +44,9 @@
 # 19.04.2021  v1.1.2    Remove sapstartsrv from process tree to capture
 #                       Enable support for SLE15SP3
 # 1.11.2021             Enable support for SLE15SP4
+# 2.14.2022   v1.1.3    Adjust checker for SAP systemd integration
 
-version="1.1.2"
+version="1.1.3"
 
 # We use these global arrays through out the program:
 #
@@ -281,23 +282,26 @@ function get_SAP_slice_data() {
         SAP_slice_data['memory.low']=${SAP_slice_data['memory.low']:=0}
         SAP_slice_data['memory.current']=$(cat "/sys/fs/cgroup/${SAP_slice_data['name']}/memory.current" 2>/dev/null)
         SAP_slice_data['memory.current']=${SAP_slice_data['memory.current']:=0}
+        SAP_slice_data['unprotect_list']=${SAP_slice_data['unprotect_list']:=''}
 
         error=0
         while read path ; do
-            if [ ! -e "${path}/memory.low" ] ; then
+            if [ ! -e "${path}/memory.low" ] || [ "$(< ${path}/memory.low)" != 'max' ]; then
+                if [ ${#SAP_slice_data['unprotect_list']} -ne 0 ]; then
+                    SAP_slice_data['unprotect_list']+=" ${path##*/}"
+                else
+                    SAP_slice_data['unprotect_list']+="${path##*/}"
+                fi
                 ((error++))
-                continue
-            fi
-            if [ "$(< ${path}/memory.low)" != 'max' ] ; then
-                ((error++))
-                continue
             fi
         done < <(find "/sys/fs/cgroup/${SAP_slice_data['name']}/" -mindepth 1 -type d)
+
         if [ ${error} -ne 0 ] ; then
             SAP_slice_data['memory_low_children']='false'
         else
             SAP_slice_data['memory_low_children']='ok'
         fi
+
     else
         SAP_slice_data['exists']='no'
     fi
@@ -653,9 +657,18 @@ function check_wmp() {
             esac
             case "${SAP_slice_data['memory_low_children']}" in
                 false)
-                    print_fail "Subcgroups of ${SAP_slice_data['name']} have either no MemoryLow setting or are not set to maximum!" "Check what has changed the parameters and restart the SAP instances."
-                    ((fails++))
-                    ;;
+                    eval $(grep ^VERSION= /etc/os-release)
+
+                    case "${VERSION}" in
+                        15-SP4)
+                            print_ok "In SLE15SP4, subcgroups of ${SAP_slice_data['name']} without MemoryLow setting is acceptable."
+                            ;;
+                        *)
+                            print_fail "Subcgroups (${SAP_slice_data['unprotect_list']}) of ${SAP_slice_data['name']} have either no MemoryLow setting or are not set to maximum!" "Refer to the SUSE doc and check what has changed the parameters then restart the SAP instances."
+                            ((fails++))
+                            ;;
+                    esac
+
             esac
             ;;
         no)
