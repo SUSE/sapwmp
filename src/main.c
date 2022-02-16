@@ -39,9 +39,9 @@ static inline void freep(void *p) {
 	free(*(void **)p);
 }
 
-int _already_in_systemd(pid_t pid, const char *target_slice) {
+int already_in_slice(pid_t pid, const char *target_slice) {
 	char path[PATH_MAX];
-	char buf[LINE_LEN];
+	char buf[PATH_MAX];
 	char pattern[UNIT_NAME_LEN + 2];
 	FILE *f;
 	int r;
@@ -58,18 +58,17 @@ int _already_in_systemd(pid_t pid, const char *target_slice) {
 	if (!f)
 		return -errno;
 
-	while (fgets(buf, LINE_LEN, f)) {
+	r = 0;
+	while (fgets(buf, PATH_MAX, f)) {
 		if (strncmp(buf, "0:", 2) != 0)
 			continue;
 
 		if (strstr(buf, pattern)) {
 			r = 1;
-			goto final;
+			break;
 		}
 	}
-	r = 0;
 
-final:
 	fclose(f);
 	return r;
 }
@@ -215,6 +214,7 @@ final:
 
 int collect_pids(pid_t **rpids, int force) {
 	int n_pids = 0;
+	int r;
 	pid_t pid, ppid;
 	char comm[TASK_COMM_LEN + 1];
 	pid_t *pids;
@@ -230,17 +230,28 @@ int collect_pids(pid_t **rpids, int force) {
 
 	pid = getppid();
 	while (pid > 1 && n_pids < MAX_PIDS) {
-		if (read_stat(pid, &ppid, comm))
+		if (read_stat(pid, &ppid, comm)) {
+			r = -ESRCH;
 			goto err;
+		}
+
 		if (verbose)
 			log_debug("%10i: %s", pid, comm);
 
 		for (char **p = config.parent_commands.list; *p; p++) {
 			if(!strcmp(comm, *p)) {
-				if (!force && _already_in_systemd(pid, config.slice))
-					log_info("Found pid(%d) already in %s", pid, config.slice);
-				else
-					pids[n_pids++] = pid;
+				if (!force) {
+					r = already_in_slice(pid, config.slice);
+
+					if (r < 0)
+						goto err;
+					else if (r == 1) {
+						log_info("Found pid(%d) already in %s", pid, config.slice);
+						break;
+					}
+				}
+
+				pids[n_pids++] = pid;
 				break;
 			}
 		}
@@ -254,7 +265,7 @@ int collect_pids(pid_t **rpids, int force) {
 
 err:
 	free(pids);
-	return -ESRCH;
+	return r;
 }
 
 static int make_scope_name(char *buf) {
@@ -280,7 +291,7 @@ static void print_help(const char *name) {
 	fprintf(stderr, "\n");
 	fprintf(stderr, "       -h	Show this help\n");
 	fprintf(stderr, "       -v	Verbose logging (for debugging)\n");
-	fprintf(stderr, "       -f	Force protect all valid processes(including systemd launched)\n");
+	fprintf(stderr, "       -f	Force capture all valid processes(including systemd launched)\n");
 	fprintf(stderr, "       -a	Put chosen ancestor processes under WMP scope\n");
 }
 
@@ -331,7 +342,7 @@ int main(int argc, char *argv[]) {
 	if (n_pids < 0)
 		exit_error(EXIT_FAILURE, n_pids, "Failed collecting PIDs");
 	else if (n_pids == 0)
-		return EXIT_SUCCESS;
+		exit_error(EXIT_SUCCESS, 0, "Empty capture");
 
 	r = make_scope_name(unit_name);
 	if (r < 0)
