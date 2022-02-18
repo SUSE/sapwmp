@@ -44,8 +44,9 @@
 # 19.04.2021  v1.1.2    Remove sapstartsrv from process tree to capture
 #                       Enable support for SLE15SP3
 # 1.11.2021             Enable support for SLE15SP4
+# 2.14.2022   v1.1.3    Adjust checker for SAP systemd integration
 
-version="1.1.2"
+version="1.1.3"
 
 # We use these global arrays through out the program:
 #
@@ -281,23 +282,26 @@ function get_SAP_slice_data() {
         SAP_slice_data['memory.low']=${SAP_slice_data['memory.low']:=0}
         SAP_slice_data['memory.current']=$(cat "/sys/fs/cgroup/${SAP_slice_data['name']}/memory.current" 2>/dev/null)
         SAP_slice_data['memory.current']=${SAP_slice_data['memory.current']:=0}
+        SAP_slice_data['unprotect_list']=${SAP_slice_data['unprotect_list']:=''}
 
         error=0
-        while read path ; do 
-            if [ -e "${path}/memory.low" ] ; then
+        while read path ; do
+            if [ ! -e "${path}/memory.low" ] || [ "$(< ${path}/memory.low)" != 'max' ]; then
+                if [ ${#SAP_slice_data['unprotect_list']} -ne 0 ]; then
+                    SAP_slice_data['unprotect_list']+=" ${path##*/}"
+                else
+                    SAP_slice_data['unprotect_list']+="${path##*/}"
+                fi
                 ((error++))
-                continue
             fi
-            if [ "$(< ${path}/memory.low)" != 'max' ] ; then
-                ((error++))
-                continue
-            fi 
         done < <(find "/sys/fs/cgroup/${SAP_slice_data['name']}/" -mindepth 1 -type d)
-        if [ ${error} -ne 0 ] ; then 
-            SAP_slice_data['memory_low_children']='ok'
-        else
+
+        if [ ${error} -ne 0 ] ; then
             SAP_slice_data['memory_low_children']='false'
+        else
+            SAP_slice_data['memory_low_children']='ok'
         fi
+
     else
         SAP_slice_data['exists']='no'
     fi
@@ -651,14 +655,23 @@ function check_wmp() {
                     ((fails++))
                     ;;
             esac
-            case "${SAP_slice_data['memory_low_children']}" in 
+            case "${SAP_slice_data['memory_low_children']}" in
                 false)
-                    print_fail "Subcgroups of ${SAP_slice_data['name']} have either no MemoryLow setting or are not set to maximum!" "Check what has changed the parameters and restart the SAP instances."
-                    ((fails++))
-                    ;;
+                    eval $(grep ^VERSION= /etc/os-release)
+
+                    case "${VERSION}" in
+                        15-SP4)
+                            print_ok "In SLE15SP4, subcgroups of ${SAP_slice_data['name']} without MemoryLow setting is acceptable."
+                            ;;
+                        *)
+                            print_fail "Subcgroups (${SAP_slice_data['unprotect_list']}) of ${SAP_slice_data['name']} have either no MemoryLow setting or are not set to maximum!" "Refer to the SUSE doc and check what has changed the parameters then restart the SAP instances."
+                            ((fails++))
+                            ;;
+                    esac
+
             esac
             ;;
-        no) 
+        no)
             print_fail "Unit file for ${SAP_slice_data['name']} is missing!" "Reinstall the sapwmp package."
             ((fails++))
             ;;
@@ -685,21 +698,26 @@ function check_wmp() {
 
     # Check if MemoryLow of the SAP slice is lower the memory.current and less then 3% as physical memory.
     if [ -n "${SAP_slice_data['MemoryLow']}" ] ; then
-        if [ ${SAP_slice_data['MemoryLow']} -gt ${SAP_slice_data['memory.current']} ] ; then 
-            print_ok "MemoryLow is larger then the current allocated memory for ${SAP_slice_data['name']}."
-        else
-            print_fail "MemoryLow (${SAP_slice_data['MemoryLow']}) is smaller then the current allocated memory (${SAP_slice_data['memory.current']}) for ${SAP_slice_data['name']}!" "Check if this is an expected situation."
-            ((fails++))
-        fi
-        if [ ${SAP_slice_data['MemoryLow']} -lt ${memory_info['MemTotal']} ] ; then
-            print_ok "MemoryLow of ${SAP_slice_data['name']} is less then total memory."
-            memory_low_thresh=$(( ${memory_info['MemTotal']} * 97 / 100 ))
-            if [ ${SAP_slice_data['MemoryLow']} -gt ${memory_low_thresh} ] ; then
-                print_warn "MemoryLow of ${SAP_slice_data['name']} (${SAP_slice_data['MemoryLow']}) is very close to the total physical memory (${memory_info['MemTotal']})!"
-                ((warnings++))
+        if grep -q '^[[:digit:]]*$' <<< "${SAP_slice_data['MemoryLow']}";then
+            if [ ${SAP_slice_data['MemoryLow']} -gt ${SAP_slice_data['memory.current']} ] ; then
+                print_ok "MemoryLow is larger then the current allocated memory for ${SAP_slice_data['name']}."
+            else
+                print_fail "MemoryLow (${SAP_slice_data['MemoryLow']}) is smaller then the current allocated memory (${SAP_slice_data['memory.current']}) for ${SAP_slice_data['name']}!" "Check if this is an expected situation."
+                ((fails++))
+            fi
+            if [ ${SAP_slice_data['MemoryLow']} -lt ${memory_info['MemTotal']} ] ; then
+                print_ok "MemoryLow of ${SAP_slice_data['name']} is less then total memory."
+                memory_low_thresh=$(( ${memory_info['MemTotal']} * 97 / 100 ))
+                if [ ${SAP_slice_data['MemoryLow']} -gt ${memory_low_thresh} ] ; then
+                    print_warn "MemoryLow of ${SAP_slice_data['name']} (${SAP_slice_data['MemoryLow']}) is very close to the total physical memory (${memory_info['MemTotal']})!"
+                    ((warnings++))
+                fi
+            else
+                print_fail "MemoryLow of ${SAP_slice_data['name']} (${SAP_slice_data['MemoryLow']}) is not less then the total physical memory (${memory_info['MemTotal']})!" "Reduce MemoryLow."
+                ((fails++))
             fi
         else
-            print_fail "MemoryLow of ${SAP_slice_data['name']} (${SAP_slice_data['MemoryLow']}) is not less then the total physical memory (${memory_info['MemTotal']})!" "Reduce MemoryLow."
+            print_fail "MemoryLow of ${SAP_slice_data['name']} (${SAP_slice_data['MemoryLow']}) is not a numeric value!" "Configure MemoryLow to a number."
             ((fails++))
         fi
     else

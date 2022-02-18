@@ -39,6 +39,40 @@ static inline void freep(void *p) {
 	free(*(void **)p);
 }
 
+int already_in_slice(pid_t pid, const char *target_slice) {
+	char path[PATH_MAX];
+	char buf[PATH_MAX];
+	char pattern[UNIT_NAME_LEN + 2];
+	FILE *f;
+	int r;
+
+	r = snprintf(path, PATH_MAX, "/proc/%i/cgroup", pid);
+	if (r < 0)
+		return r;
+
+	r = snprintf(pattern, UNIT_NAME_LEN + 2, "/%s/", target_slice);
+	if (r < 0)
+		return r;
+
+	f = fopen(path, "r");
+	if (!f)
+		return -errno;
+
+	r = 0;
+	while (fgets(buf, PATH_MAX, f)) {
+		if (strncmp(buf, "0:", 2) != 0)
+			continue;
+
+		if (strstr(buf, pattern)) {
+			r = 1;
+			break;
+		}
+	}
+
+	fclose(f);
+	return r;
+}
+
 int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
             struct unit_config *properties,
             size_t n_pids, pid_t *pids) {
@@ -178,8 +212,9 @@ final:
 	return r;
 }
 
-int collect_pids(pid_t **rpids) {
+int collect_pids(pid_t **rpids, int force) {
 	int n_pids = 0;
+	int r;
 	pid_t pid, ppid;
 	char comm[TASK_COMM_LEN + 1];
 	pid_t *pids;
@@ -195,13 +230,27 @@ int collect_pids(pid_t **rpids) {
 
 	pid = getppid();
 	while (pid > 1 && n_pids < MAX_PIDS) {
-		if (read_stat(pid, &ppid, comm))
+		if (read_stat(pid, &ppid, comm)) {
+			r = -ESRCH;
 			goto err;
+		}
+
 		if (verbose)
 			log_debug("%10i: %s", pid, comm);
 
 		for (char **p = config.parent_commands.list; *p; p++) {
 			if(!strcmp(comm, *p)) {
+				if (!force) {
+					r = already_in_slice(pid, config.slice);
+
+					if (r < 0)
+						goto err;
+					else if (r == 1) {
+						log_info("Found pid(%d) already in %s", pid, config.slice);
+						break;
+					}
+				}
+
 				pids[n_pids++] = pid;
 				break;
 			}
@@ -216,7 +265,7 @@ int collect_pids(pid_t **rpids) {
 
 err:
 	free(pids);
-	return -ESRCH;
+	return r;
 }
 
 static int make_scope_name(char *buf) {
@@ -237,11 +286,12 @@ static int make_scope_name(char *buf) {
 }
 
 static void print_help(const char *name) {
-	fprintf(stderr, "Usage: %s [-hv] -a\n", name);
+	fprintf(stderr, "Usage: %s [-hvf] -a\n", name);
 	fprintf(stderr, "       Similar to systemd-run --scope, logs into syslog unless stderr is a TTY\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "       -h	Show this help\n");
 	fprintf(stderr, "       -v	Verbose logging (for debugging)\n");
+	fprintf(stderr, "       -f	Force capture all valid processes(including systemd launched)\n");
 	fprintf(stderr, "       -a	Put chosen ancestor processes under WMP scope\n");
 }
 
@@ -249,13 +299,13 @@ int main(int argc, char *argv[]) {
 	_cleanup_(sd_bus_flush_close_unrefp) sd_bus *bus = NULL;
 	_cleanup_(freep) pid_t *pids = NULL;
 	char unit_name[UNIT_NAME_LEN];
-	int opt, ancestors = 0;
+	int opt, ancestors = 0, force = 0;
 	int n_pids;
 	int r;
 
 	log_init();
 
-	while ((opt = getopt(argc, argv, "ahv")) != -1) {
+	while ((opt = getopt(argc, argv, "ahvf")) != -1) {
 		switch (opt) {
 		case 'a':
 			ancestors = 1;
@@ -265,6 +315,9 @@ int main(int argc, char *argv[]) {
 			return EXIT_SUCCESS;
 		case 'v':
 			verbose = 1;
+			break;
+		case 'f':
+			force = 1;
 			break;
 		default:
 			log_error("Unknown option(s), use -h for help");
@@ -285,7 +338,7 @@ int main(int argc, char *argv[]) {
 	if (r < 0)
 		exit_error(EXIT_FAILURE, r, "Failed loading config from '%s'", CONF_FILE);
 
-	n_pids = collect_pids(&pids);
+	n_pids = collect_pids(&pids, force);
 	if (n_pids < 0)
 		exit_error(EXIT_FAILURE, n_pids, "Failed collecting PIDs");
 	else if (n_pids == 0)
