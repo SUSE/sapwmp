@@ -717,7 +717,7 @@ function check_wmp() {
                 ((fails++))
             fi
         else
-            print_fail "MemoryLow of ${SAP_slice_data['name']} (${SAP_slice_data['MemoryLow']}) is not digital!" "Configure MemoryLow to a number."
+            print_fail "MemoryLow of ${SAP_slice_data['name']} (${SAP_slice_data['MemoryLow']}) is not a numeric value!" "Configure MemoryLow to a number."
             ((fails++))
         fi
     else
