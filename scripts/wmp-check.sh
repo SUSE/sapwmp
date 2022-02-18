@@ -698,21 +698,26 @@ function check_wmp() {
 
     # Check if MemoryLow of the SAP slice is lower the memory.current and less then 3% as physical memory.
     if [ -n "${SAP_slice_data['MemoryLow']}" ] ; then
-        if [ ${SAP_slice_data['MemoryLow']} -gt ${SAP_slice_data['memory.current']} ] ; then 
-            print_ok "MemoryLow is larger then the current allocated memory for ${SAP_slice_data['name']}."
-        else
-            print_fail "MemoryLow (${SAP_slice_data['MemoryLow']}) is smaller then the current allocated memory (${SAP_slice_data['memory.current']}) for ${SAP_slice_data['name']}!" "Check if this is an expected situation."
-            ((fails++))
-        fi
-        if [ ${SAP_slice_data['MemoryLow']} -lt ${memory_info['MemTotal']} ] ; then
-            print_ok "MemoryLow of ${SAP_slice_data['name']} is less then total memory."
-            memory_low_thresh=$(( ${memory_info['MemTotal']} * 97 / 100 ))
-            if [ ${SAP_slice_data['MemoryLow']} -gt ${memory_low_thresh} ] ; then
-                print_warn "MemoryLow of ${SAP_slice_data['name']} (${SAP_slice_data['MemoryLow']}) is very close to the total physical memory (${memory_info['MemTotal']})!"
-                ((warnings++))
+        if grep -q '^[[:digit:]]*$' <<< "${SAP_slice_data['MemoryLow']}";then
+            if [ ${SAP_slice_data['MemoryLow']} -gt ${SAP_slice_data['memory.current']} ] ; then
+                print_ok "MemoryLow is larger then the current allocated memory for ${SAP_slice_data['name']}."
+            else
+                print_fail "MemoryLow (${SAP_slice_data['MemoryLow']}) is smaller then the current allocated memory (${SAP_slice_data['memory.current']}) for ${SAP_slice_data['name']}!" "Check if this is an expected situation."
+                ((fails++))
+            fi
+            if [ ${SAP_slice_data['MemoryLow']} -lt ${memory_info['MemTotal']} ] ; then
+                print_ok "MemoryLow of ${SAP_slice_data['name']} is less then total memory."
+                memory_low_thresh=$(( ${memory_info['MemTotal']} * 97 / 100 ))
+                if [ ${SAP_slice_data['MemoryLow']} -gt ${memory_low_thresh} ] ; then
+                    print_warn "MemoryLow of ${SAP_slice_data['name']} (${SAP_slice_data['MemoryLow']}) is very close to the total physical memory (${memory_info['MemTotal']})!"
+                    ((warnings++))
+                fi
+            else
+                print_fail "MemoryLow of ${SAP_slice_data['name']} (${SAP_slice_data['MemoryLow']}) is not less then the total physical memory (${memory_info['MemTotal']})!" "Reduce MemoryLow."
+                ((fails++))
             fi
         else
-            print_fail "MemoryLow of ${SAP_slice_data['name']} (${SAP_slice_data['MemoryLow']}) is not less then the total physical memory (${memory_info['MemTotal']})!" "Reduce MemoryLow."
+            print_fail "MemoryLow of ${SAP_slice_data['name']} (${SAP_slice_data['MemoryLow']}) is not digital!" "Configure MemoryLow to a number."
             ((fails++))
         fi
     else
