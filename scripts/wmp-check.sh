@@ -45,6 +45,7 @@
 #                       Enable support for SLE15SP3
 # 1.11.2021             Enable support for SLE15SP4
 # 2.14.2022   v1.1.3    Adjust checker for SAP systemd integration
+#                       Allow to disable OS detection with `--skip-os-check`
 
 version="1.1.3"
 
@@ -119,6 +120,27 @@ function print_warn() {
 function print_note() {
     local text="  ${@}"
     echo -e "[${GRAY}NOTE${RESET}]${text}"
+}
+
+function check_os() {
+    # Determine if we are running a SLES for SAP Applications 15.  #####  CHANGED TO RUN ON LEAP !! #######
+    if [[ "${DONT_CHECK_OS}" -eq 1 ]] ; then
+        print_warn "OS dection has been disabled!"
+    else
+        eval $(grep ^ID= /etc/os-release)
+        eval $(grep ^VERSION= /etc/os-release)
+        PROD=""
+
+        [ -f "/etc/products.d/SLES_SAP.prod" ] && PROD="4sap"
+        case "${ID}${PROD}-${VERSION-ID}" in
+            sles4sap-15|sles4sap-15-SP1|sles4sap-15-SP2|sles4sap-15-SP3|sles4sap-15-SP4)
+                ;;
+            *)
+                echo "Only SLES for SAP Applications 15 SP0/1/2/3/4 are supported! Your OS is ${ID}${PROD}-${VERSION}. Exiting."
+                exit 2
+                ;;
+        esac
+    fi
 }
 
 function version_lt() {
@@ -789,24 +811,16 @@ echo -e " - It does not check if you have the latest version installed, only min
 echo -e " - It assumes SAP instances profiles can be found beneath /usr/sap/<SID>/SYS/profile/."
 echo -e " - This tool does not check, if the memory.low value is set correctly.\n"
 
-# Determine if we are running a SLES for SAP Applications 15.  #####  CHANGED TO RUN ON LEAP !! #######
-eval $(grep ^ID= /etc/os-release)
-eval $(grep ^VERSION= /etc/os-release)
-PROD=""
-
-[ -f "/etc/products.d/SLES_SAP.prod" ] && PROD="4sap"
-case "${ID}${PROD}-${VERSION-ID}" in
-    sles4sap-15|sles4sap-15-SP1|sles4sap-15-SP2|sles4sap-15-SP3|sles4sap-15-SP4)
-        ;;
-    *)
-        echo "Only SLES for SAP Applications 15 SP0/1/2/3/4 are supported! Your OS is ${ID}${PROD}-${VERSION}. Exiting."
-        exit 2
-        ;;
-esac
+# Disable OS check.
+if [ "${1}" == '--skip-os-check' ] ; then
+    DONT_CHECK_OS=1
+    shift
+fi
 
 # Check parameters and act upon.
 case "${#}" in
-    0)  collect_data
+    0)  check_os
+        collect_data
         check_wmp
         exit $?
         ;;
