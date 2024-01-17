@@ -235,8 +235,7 @@ int collect_pids(pid_t **rpids, int force) {
 			goto err;
 		}
 
-		if (verbose)
-			log_debug("%10i: %s", pid, comm);
+		log_debug("%10i: %s", pid, comm);
 
 		for (char **p = config.parent_commands.list; *p; p++) {
 			if(!strcmp(comm, *p)) {
@@ -303,7 +302,7 @@ int main(int argc, char *argv[]) {
 	int n_pids;
 	int r;
 
-	log_init();
+	log_init(&verbose);
 
 	while ((opt = getopt(argc, argv, "ahvf")) != -1) {
 		switch (opt) {
