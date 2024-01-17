@@ -10,6 +10,7 @@
 
 #include "config.h"
 #include "log.h"
+#include "dbus-job.h"
 
 #define MAX_PIDS		16
 #define CONF_FILE		"/etc/sapwmp.conf"
@@ -76,8 +77,9 @@ int already_in_slice(pid_t pid, const char *target_slice) {
 int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
             struct unit_config *properties,
             size_t n_pids, pid_t *pids) {
-	_cleanup_(sd_bus_message_unrefp) sd_bus_message *m = NULL;
+	_cleanup_(sd_bus_message_unrefp) sd_bus_message *m = NULL, *reply = NULL;
 	_cleanup_(sd_bus_error_free) sd_bus_error bus_error = SD_BUS_ERROR_NULL;
+	const char *job;
 	int r;
 
 	r = sd_bus_message_new_method_call(
@@ -166,11 +168,20 @@ int migrate(sd_bus *bus, const char *target_unit, const char *target_slice,
         if (r < 0)
 		return r;
 
-        r = sd_bus_call(bus, m, 0, &bus_error, NULL);
+        r = sd_bus_call(bus, m, 0, &bus_error, &reply);
 	if (r < 0) {
 		log_info("DBus call error: %s", strerror(sd_bus_error_get_errno(&bus_error)));
+		return r;
 	}
-	/* ignore reply, i.e. don't wait for the job to finish */
+	r = sd_bus_message_read(reply, "o", &job);
+	if (r < 0) {
+		log_info("DBus read error: %s", strerror(sd_bus_error_get_errno(&bus_error)));
+		return r;
+	}
+	r = wait_for_job(bus, job);
+	if (r < 0) {
+		log_info("Start job failed: %s", strerror(sd_bus_error_get_errno(&bus_error)));
+	}
 	return r;
 }
 
