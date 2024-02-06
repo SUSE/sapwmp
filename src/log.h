@@ -6,7 +6,7 @@
 #define log_info(...)	write_log(LOG_INFO, __VA_ARGS__)
 #define log_debug(...)	write_log(LOG_DEBUG, __VA_ARGS__)
 
-void log_init(void);
+void log_init(int *v_p);
 void write_log(int level, const char *fmt, ...);
 
 void exit_error(int status, int e, const char *fmt, ...) __attribute__ ((noreturn));

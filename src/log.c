@@ -9,11 +9,13 @@
 #define MAX_FORMAT 128
 
 static int use_syslog;
+static int *verbose_p;
 
-void log_init(void) {
+void log_init(int *v_p) {
 	if (!isatty(STDERR_FILENO)) {
 		use_syslog = 1;
 	}
+	verbose_p = v_p;
 }
 
 static inline void vprintlog(int level /*unused*/, const char *fmt, va_list ap) {
@@ -23,6 +25,8 @@ static inline void vprintlog(int level /*unused*/, const char *fmt, va_list ap) 
 
 void write_log(int level, const char *fmt, ...) {
 	va_list ap;
+	if (level >= LOG_DEBUG && !*verbose_p)
+		return;
 
 	va_start(ap, fmt);
 	if (use_syslog)
